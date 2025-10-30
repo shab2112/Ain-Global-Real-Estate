@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Modality, GenerateContentResponse } from "@google/genai";
 import { SocialPlatform } from '../types';
 
@@ -9,6 +8,11 @@ if (!API_KEY) {
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+// Pricing for gemini-2.5-flash in USD per 1 million tokens
+const GEMINI_FLASH_INPUT_COST_PER_MILLION_TOKENS = 0.35;
+const GEMINI_FLASH_OUTPUT_COST_PER_MILLION_TOKENS = 0.70;
+
 
 const getPlatformInstruction = (platform: SocialPlatform): string => {
   switch (platform) {
@@ -87,5 +91,109 @@ export const enhanceImage = async (originalImage: string, enhancementPrompt: str
     } catch (error) {
         console.error("Error enhancing image:", error);
         throw new Error("Failed to enhance image with AI. Please check the console for details.");
+    }
+};
+
+export interface MarketReportResult {
+    report: string;
+    sources: any[];
+    tokenCount?: number;
+    cost?: number;
+}
+
+const cityDataSources: Record<string, string[]> = {
+    'Dubai': ['Dubai Land Department (DLD)', 'Bayut', 'Property Finder', 'ValuStrat'],
+    'Abu Dhabi': ['Abu Dhabi Department of Municipalities and Transport', 'Bayut', 'Property Finder', 'ValuStrat'],
+    'London': ['UK Land Registry', 'Rightmove', 'Savills', 'Knight Frank', 'Zoopla'],
+    'New York': ['NYC Open Data', 'Zillow', 'StreetEasy', 'CBRE', 'Cushman & Wakefield'],
+    'Singapore': ['URA (Urban Redevelopment Authority)', 'Knight Frank', 'Savills'],
+    'Tokyo': ['Ministry of Land, Infrastructure, Transport and Tourism (MLIT) Japan', 'REINS', 'CBRE', 'Jones Lang LaSalle'],
+    'Sydney': ['CoreLogic', 'Domain', 'REA Group', 'Knight Frank'],
+    'Paris': ['Notaires de France', 'INSEE', 'BNP Paribas Real Estate'],
+    'Los Angeles': ['Zillow', 'Redfin', 'Multiple Listing Service (MLS)', 'CBRE', 'Cushman & Wakefield'],
+    'Shanghai': ['CREIS', 'China Index Academy', 'Savills China', 'JLL'],
+    'Mumbai': ['Maharashtra Real Estate Regulatory Authority (MahaRERA)', 'IGR Maharashtra'],
+    'Delhi': ['Delhi Real Estate Regulatory Authority (RERA)', 'Delhi Development Authority (DDA)'],
+    'Bangalore': ['Karnataka Real Estate Regulatory Authority (RERA Karnataka)', 'Kaveri Online Services'],
+    'Chennai': ['Tamil Nadu Real Estate Regulatory Authority (TNRERA)', 'TCREGISNET'],
+    'Hyderabad': ['Telangana State Real Estate Regulatory Authority (TSRERA)', 'IGRS Telangana'],
+};
+
+const globalDataSources = [
+    "Knight Frank Global Cities Index", "CBRE Global Outlook", "Savills World Cities Report", "World Bank Economic Reports", "IMF World Economic Outlook"
+];
+
+const getDataSourcePrompt = (cities: string[]): string => {
+    const sources = new Set<string>(globalDataSources);
+    cities.forEach(city => {
+        if (cityDataSources[city]) {
+            cityDataSources[city].forEach(source => sources.add(source));
+        }
+    });
+    return Array.from(sources).join(', ');
+};
+
+export const generateMarketReport = async (primaryCity: string, comparisonCities: string[], selectedMetrics: string[]): Promise<MarketReportResult> => {
+    const model = 'gemini-2.5-flash';
+    const allCities = [primaryCity, ...comparisonCities];
+    const dataSourcePrompt = getDataSourcePrompt(allCities);
+
+    const sourceInstruction = `
+- **Primary Data Sources:** For your analysis, you must prioritize information from the trusted global and local sources listed for each city: ${dataSourcePrompt}.
+- **Fallback Strategy (For ALL Cities):** Your primary goal is to use the official/local sources. However, if a specific data point is unavailable from these primary sources for any city, you may use other reputable global reports (like those from Knight Frank, CBRE, or Savills).
+- **Mandatory Citation for Fallbacks:** When you use a fallback source, you MUST explicitly state that the information was not available through official channels and cite the source used. For example: "The current vacancy rate is 5.2% (Source: CBRE Global Outlook, as official data was not available for this period)." This transparency is critical.
+`;
+    
+    const fullPrompt = `
+You are a world-class real estate market intelligence engine for Ain Global. Your task is to query trusted data sources, normalize metrics, and deliver a standardized, data-driven report.
+You MUST use the provided sources to ground your answers. All monetary values must be normalized to USD (e.g., price per square foot in USD).
+When analyzing the "Currency Stability & Exchange Rate" metric, you must provide a clear comparison of the local currency's performance against the USD. For the most recent 12-month period, you MUST include the starting exchange rate, the current exchange rate, and the percentage of depreciation or appreciation. For example: "The Indian Rupee (INR) depreciated 5.45% against the USD over the last 12 months, moving from ~84.10 to ~88.67." Then, explicitly state the potential impact of this change on returns for a USD-based foreign investor.
+
+**Report Request:**
+1.  **Primary City for Analysis:** ${primaryCity}
+2.  **Comparison Cities:** ${comparisonCities.join(', ')}
+3.  **Metrics to Analyze:** ${selectedMetrics.join(', ')}
+
+**Output Format and Structure for Visual Infographics (CRITICAL):**
+- The entire output must be in well-structured markdown optimized for parsing.
+- Start with a main heading: # Real Estate Market Intelligence Report — ${primaryCity}
+- Follow with an "## Executive Summary" section for ${primaryCity}.
+- For each metric category in the request (${selectedMetrics.join(', ')}), create a section with a level-2 heading (e.g., ## Pricing).
+- Within each metric section, create a sub-section for each city using a level-3 heading that INCLUDES a trend emoji (e.g., ### Dubai 📈, ### London 📉, ### New York ➡️).
+- Under each city's heading, list key data points as a bulleted list of bolded key-value pairs (e.g., - **Average Price/sq.ft:** $580 USD).
+- Follow the bullet points with a brief, single-paragraph summary for that city.
+- Conclude the report with a final section titled "## Investor Summary & Outlook".
+
+**Data Sourcing Instructions:**
+${sourceInstruction}`;
+
+    try {
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model,
+            contents: fullPrompt,
+            config: {
+                tools: [{googleSearch: {}}],
+            },
+        });
+
+        const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+        const usageMetadata = response.usageMetadata;
+        const totalTokenCount = usageMetadata?.totalTokenCount;
+        const promptTokenCount = usageMetadata?.promptTokenCount || 0;
+        const candidatesTokenCount = usageMetadata?.candidatesTokenCount || 0;
+
+        const inputCost = (promptTokenCount / 1000000) * GEMINI_FLASH_INPUT_COST_PER_MILLION_TOKENS;
+        const outputCost = (candidatesTokenCount / 1000000) * GEMINI_FLASH_OUTPUT_COST_PER_MILLION_TOKENS;
+        const totalCost = inputCost + outputCost;
+
+        return {
+            report: response.text,
+            sources: groundingChunks,
+            tokenCount: totalTokenCount,
+            cost: totalCost,
+        };
+    } catch (error) {
+        console.error("Error generating market report:", error);
+        throw new Error("Failed to generate market report from AI. Please check the console for details.");
     }
 };

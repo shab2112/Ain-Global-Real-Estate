@@ -1,8 +1,15 @@
-
 import React from 'react';
 import { SparklesIcon } from './icons/SparklesIcon';
+import { User } from '../types';
+import UserSwitcher from './UserSwitcher';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  currentUser: User;
+  setCurrentUser: (user: User) => void;
+  allUsers: User[];
+}
+
+const Header: React.FC<HeaderProps> = ({ currentUser, setCurrentUser, allUsers }) => {
   return (
     <header className="bg-brand-secondary p-4 shadow-md flex items-center justify-between z-10">
       <div className="flex items-center gap-3">
@@ -11,6 +18,11 @@ const Header: React.FC = () => {
           Ain Global <span className="text-brand-gold">Pro AI</span>
         </h1>
       </div>
+      <UserSwitcher 
+        users={allUsers} 
+        selectedUser={currentUser} 
+        onSelectUser={setCurrentUser} 
+      />
     </header>
   );
 };

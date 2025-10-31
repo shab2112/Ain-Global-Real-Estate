@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { View } from '../types';
 import { HomeIcon } from './icons/HomeIcon';
@@ -18,7 +17,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
     { id: View.ContentStudio, name: 'Content Studio', icon: DocumentTextIcon, disabled: false },
     { id: View.Campaigns, name: 'Campaigns', icon: CampaignIcon, disabled: true },
     { id: View.MarketIntelligence, name: 'Market Intelligence', icon: ChartBarIcon, disabled: false },
-    { id: View.Clients, name: 'Clients', icon: UsersIcon, disabled: true },
+    { id: View.Clients, name: 'Clients', icon: UsersIcon, disabled: false },
   ];
 
   return (

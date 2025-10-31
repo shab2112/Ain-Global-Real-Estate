@@ -33,6 +33,10 @@ const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
   const elements: React.ReactNode[] = [];
   let currentList: React.ReactNode[] = [];
 
+  let inTable = false;
+  let tableHeaders: string[] = [];
+  let tableRows: string[][] = [];
+
   const flushList = () => {
     if (currentList.length > 0) {
       elements.push(<ul key={`ul-${elements.length}`} className="list-disc list-inside space-y-1 my-2 pl-4">{currentList}</ul>);
@@ -40,31 +44,78 @@ const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
     }
   };
 
+  const flushTable = () => {
+    if (tableHeaders.length > 0) {
+      elements.push(
+        <div key={`table-wrapper-${elements.length}`} className="overflow-x-auto my-4 border border-brand-accent rounded-lg">
+          <table key={`table-${elements.length}`} className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-brand-accent/30">
+                {tableHeaders.map((header, i) => (
+                  <th key={i} className="p-3 text-sm font-semibold text-brand-text">{renderLine(header)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableRows.map((row, i) => (
+                <tr key={i} className="border-t border-brand-accent hover:bg-brand-accent/20 transition-colors">
+                  {row.map((cell, j) => (
+                    <td key={j} className="p-3 text-sm text-brand-light">{renderLine(cell)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+    inTable = false;
+    tableHeaders = [];
+    tableRows = [];
+  };
+
   lines.forEach((line, i) => {
-    if (line.startsWith('## ')) {
-      flushList();
-      elements.push(<h2 key={i} className="text-xl font-bold text-brand-text mt-6 mb-2 border-b border-brand-accent pb-1">{renderLine(line.substring(3))}</h2>);
-    } else if (line.startsWith('# ')) {
-      flushList();
-      elements.push(<h1 key={i} className="text-2xl font-bold text-brand-gold mt-4 mb-3">{renderLine(line.substring(2))}</h1>);
-    } else if (line.trim().startsWith('- ')) {
-      currentList.push(<li key={i}>{renderLine(line.trim().substring(2))}</li>);
-    } else if (line.trim() === '') {
-      flushList();
-      // Add a spacer for empty lines for better paragraph separation, but only if it's not redundant
-      if (elements.length > 0 && !(elements[elements.length - 1] as React.ReactElement).key?.toString().includes('spacer')) {
-        elements.push(<div key={`spacer-${i}`} className="h-2"></div>);
+    const trimmedLine = line.trim();
+    if (trimmedLine.startsWith('|') && trimmedLine.endsWith('|')) {
+      flushList(); // Make sure we're not in a list
+      const cells = trimmedLine.split('|').slice(1, -1).map(cell => cell.trim());
+
+      if (!inTable) { // This is the header row
+        inTable = true;
+        tableHeaders = cells;
+      } else if (cells.every(cell => /^-+$/.test(cell.replace(/ /g, '')))) { // This is the separator line, ignore it
+        return;
+      } else { // This is a data row
+        tableRows.push(cells);
       }
     } else {
-      flushList();
-      elements.push(<p key={i} className="my-2">{renderLine(line)}</p>);
+      if (inTable) { // The table has ended
+        flushTable();
+      }
+
+      if (line.startsWith('## ')) {
+        flushList();
+        elements.push(<h2 key={i} className="text-xl font-bold text-brand-text mt-6 mb-2 border-b border-brand-accent pb-1">{renderLine(line.substring(3))}</h2>);
+      } else if (line.startsWith('# ')) {
+        flushList();
+        elements.push(<h1 key={i} className="text-2xl font-bold text-brand-gold mt-4 mb-3">{renderLine(line.substring(2))}</h1>);
+      } else if (trimmedLine.startsWith('- ')) {
+        currentList.push(<li key={i}>{renderLine(trimmedLine.substring(2))}</li>);
+      } else if (trimmedLine === '') {
+        flushList();
+        if (elements.length > 0 && !(elements[elements.length - 1] as React.ReactElement).key?.toString().includes('spacer')) {
+          elements.push(<div key={`spacer-${i}`} className="h-2"></div>);
+        }
+      } else {
+        flushList();
+        elements.push(<p key={i} className="my-2">{renderLine(line)}</p>);
+      }
     }
   });
 
+  flushTable(); // Flush any remaining table at the end
   flushList(); // Flush any remaining list items at the end
 
-  // The 'prose' class and 'max-w-none' are utilities that can help style rendered markdown nicely.
-  // Although not from a library like Tailwind Typography, they are good conventions.
   return <div className="text-brand-text max-w-none">{elements}</div>;
 };
 

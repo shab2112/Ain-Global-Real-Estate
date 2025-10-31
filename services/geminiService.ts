@@ -1,5 +1,6 @@
-import { GoogleGenAI, Modality, GenerateContentResponse } from "@google/genai";
-import { SocialPlatform } from '../types';
+import { GoogleGenAI, Modality, GenerateContentResponse, Type } from "@google/genai";
+import { SocialPlatform, ChatMessage } from '../types';
+import { getKnownDevelopersAndProjects } from "./apiService";
 
 // Assume process.env.API_KEY is available
 const API_KEY = process.env.API_KEY;
@@ -48,7 +49,7 @@ Generate only the text for the post body.`;
   }
 };
 
-const dataUrlToBlob = (dataUrl: string): { base64: string; mimeType: string } => {
+const dataUrlToBlobParts = (dataUrl: string): { base64: string; mimeType: string } => {
     const parts = dataUrl.split(',');
     const mimeType = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
     const base64 = parts[1];
@@ -57,7 +58,7 @@ const dataUrlToBlob = (dataUrl: string): { base64: string; mimeType: string } =>
 
 export const enhanceImage = async (originalImage: string, enhancementPrompt: string): Promise<string> => {
     const model = 'gemini-2.5-flash-image';
-    const { base64, mimeType } = dataUrlToBlob(originalImage);
+    const { base64, mimeType } = dataUrlToBlobParts(originalImage);
 
     try {
         const response: GenerateContentResponse = await ai.models.generateContent({
@@ -195,5 +196,129 @@ ${sourceInstruction}`;
     } catch (error) {
         console.error("Error generating market report:", error);
         throw new Error("Failed to generate market report from AI. Please check the console for details.");
+    }
+};
+
+export interface ExtractedClientData {
+    name: string;
+    email: string;
+    phone: string;
+}
+  
+export const extractClientFromCard = async (imageDataUrl: string): Promise<ExtractedClientData> => {
+    const model = 'gemini-2.5-flash';
+    const { base64, mimeType } = dataUrlToBlobParts(imageDataUrl);
+
+    const prompt = `
+        Analyze the following business card image. Perform OCR to extract the person's full name, their primary email address, and their primary phone number.
+        Return the data ONLY as a valid JSON object. Do not include any other text or markdown formatting.
+    `;
+
+    try {
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model,
+            contents: {
+            parts: [
+                { text: prompt },
+                {
+                    inlineData: {
+                        data: base64,
+                        mimeType: mimeType,
+                    },
+                },
+            ],
+            },
+            config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                name: { type: Type.STRING },
+                email: { type: Type.STRING },
+                phone: { type: Type.STRING },
+                },
+                required: ["name", "email", "phone"],
+            },
+            },
+        });
+
+        // The response text should already be a JSON string due to the config
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText) as ExtractedClientData;
+
+    } catch (error) {
+        console.error("Error extracting client data from card:", error);
+        throw new Error("Failed to extract data from the business card. The image may be unclear or the format unsupported.");
+    }
+};
+
+export const generateClientChatResponse = async (history: ChatMessage[]): Promise<ChatMessage> => {
+    const model = 'gemini-2.5-flash';
+    const internalData = await getKnownDevelopersAndProjects();
+
+    const systemInstruction = `You are a sophisticated, friendly, and expert AI real estate advisor for Ain Global, a luxury real estate brokerage in Dubai. Your goal is to guide clients through a structured and helpful property search conversation.
+
+Follow this multi-step process strictly:
+
+1.  **Initial Analysis & Clarification:**
+    *   When the user makes a request, first identify the key parameters they have provided: budget, handover date, specific location, property type (e.g., villa, apartment), and purchase type (off-plan or secondary).
+    *   If ANY of these are missing, your IMMEDIATE next step is to ask clarifying questions to gather all the required information. For example: "That's a great start. To narrow down the options, could you let me know if you're looking for an apartment or a villa?" or "Are you interested in off-plan projects or secondary market properties?"
+    *   DO NOT proceed until you have these details.
+
+2.  **Location Logic:**
+    *   If the user's query includes a proximity request like "near me" or "nearby" AND they have not specified another location, you must respond with the exact text: "To find properties near you, I need access to your current location. Would you be willing to share it?" DO NOT say anything else. This specific phrase will trigger the location service in the app.
+    *   If the user has provided their location data (it will appear in a message starting with '(System Info: User location is...)'), use that information and ask for confirmation: "Thanks for sharing your location. Should I focus the search around your current area, or did you have another location in mind like Nad Al Sheba?"
+
+3.  **Off-Plan Recommendation:**
+    *   Once you have all the necessary information, if the user has not specified a preference for "secondary" properties, you should assume they are open to "off-plan".
+    *   You MUST provide a brief, compelling pitch about the benefits of investing in off-plan projects, focusing on appreciation potential and securing properties in new, key areas.
+
+4.  **Final Response - The Property Table:**
+    *   After the off-plan pitch (if applicable), present the final property recommendations.
+    *   The recommendations MUST ALWAYS be in a markdown table format.
+    *   The table columns should include: 'Project Name', 'Developer', 'Property Type', 'Area (sq. ft.)', 'Price (AED)', 'Handover Date', and 'Key Features'.
+    *   Provide at least 3-4 suitable, albeit hypothetical, project options based on the user's clarified criteria.
+
+Your primary data sources for property information are your internal database of developers and projects.
+Internal Reference Data: ${internalData}
+
+Ground all other market-related answers in real-time data using the provided Google Search tool. Always be professional, courteous, and aim to provide insightful and accurate information.`;
+
+    // Convert our ChatMessage[] to the format expected by the API
+    const contents = history.map(msg => ({
+        role: msg.role,
+        parts: [{ text: msg.content }]
+    }));
+
+    try {
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model,
+            contents: {
+                role: 'user', // The overall prompt is from the user
+                parts: contents.flatMap(c => c.parts)
+            },
+            config: {
+                systemInstruction: systemInstruction,
+                tools: [{googleSearch: {}}],
+            },
+        });
+      
+        // Check if the model is asking for location based on our specific instruction
+        if (response.text.includes("To find properties near you, I need access to your current location.")) {
+            return {
+                role: 'model',
+                content: response.text, // The model's question
+                action: 'request_location', // The signal for the UI
+            };
+        }
+
+        return {
+            role: 'model',
+            content: response.text,
+            sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || [],
+        };
+    } catch (error) {
+        console.error("Error generating client chat response:", error);
+        throw new Error("I'm sorry, I encountered an error trying to process your request. Please try again.");
     }
 };

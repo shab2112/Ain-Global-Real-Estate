@@ -1,77 +1,88 @@
+
 export enum UserRole {
-    Owner = 'Owner',
-    Admin = 'Admin',
-    PropertyAdvisor = 'Property Advisor',
-    Client = 'Client',
+  Owner = 'Owner',
+  Admin = 'Admin',
+  PropertyAdvisor = 'Property Advisor',
+  Client = 'Client',
 }
 
 export interface User {
-    id: string;
-    name: string;
-    role: UserRole;
-    avatar: string;
+  id: string;
+  name: string;
+  role: UserRole;
+  avatar: string;
 }
 
 export interface Client {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    propertyAdvisorId: string;
-    cardDriveId?: string;
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  propertyAdvisorId: string;
+  cardDriveId?: string;
 }
 
 export interface DriveAsset {
-    id: string;
-    name: string;
-    type: 'image' | 'video' | 'brochure' | 'factsheet';
-    url: string;
-    content?: string;
+  id:string;
+  name: string;
+  type: 'image' | 'video' | 'brochure' | 'factsheet';
+  url: string;
+  content?: string;
 }
 
 export interface DriveProject {
-    id: string;
-    name: string;
-    developer: string;
-    assets: DriveAsset[];
+  id: string;
+  name: string;
+  developer: string;
+  assets: DriveAsset[];
 }
 
 export enum SocialPlatform {
-    Facebook = 'Facebook',
-    LinkedIn = 'LinkedIn',
-    YouTube = 'YouTube',
-    Instagram = 'Instagram',
-    Twitter = 'Twitter',
+  Facebook = 'Facebook',
+  LinkedIn = 'LinkedIn',
+  Instagram = 'Instagram',
+  YouTube = 'YouTube',
+  Twitter = 'Twitter',
 }
 
-export interface GroundingChunk {
-    web?: {
-      uri: string;
-      title: string;
-    };
-    maps?: {
-        uri: string;
-        title: string;
-        placeAnswerSources?: {
-            reviewSnippets: {
-                uri: string;
-                title: string;
-            }[];
-        };
-    };
+export enum PostType {
+  Image = 'Image',
+  Video = 'Video',
+  Text = 'Text',
+}
+
+export enum PostStatus {
+  Draft = 'Draft',
+  PendingApproval = 'Pending Approval',
+  Approved = 'Approved',
+  Published = 'Published',
+}
+
+export interface ContentPost {
+  id: string;
+  projectId: string;
+  platform: SocialPlatform;
+  postType: PostType;
+  status: PostStatus;
+  scheduledDate: string; // ISO string
+  createdBy: string; // userId
+  approvedBy?: string; // userId
+  postText: string;
+  imageUrl?: string;
+  videoUrl?: string;
 }
 
 export interface MarketReportResult {
-    report: string;
-    sources: GroundingChunk[];
-    tokenCount?: number;
-    cost?: number;
+  report: string;
+  sources: any[];
+  tokenCount: number;
+  cost: number;
 }
 
 export interface ChatMessage {
     role: 'user' | 'model';
     content: string;
-    sources?: GroundingChunk[];
+    sources?: any[];
     action?: 'request_location';
 }
 
@@ -86,53 +97,64 @@ export enum ChatMode {
     Client = 'client',
 }
 
-export enum PostStatus {
-    Draft = 'Draft',
-    PendingApproval = 'Pending Approval',
-    Approved = 'Approved',
-    Published = 'Published',
-}
-
-export enum PostType {
-    Image = 'Image',
-    Video = 'Video',
-    Text = 'Text',
-}
-
-export interface ContentPost {
-    id: string;
-    projectId: string;
-    platform: SocialPlatform;
-    postType: PostType;
-    status: PostStatus;
-    scheduledDate: string; // ISO string
-    createdBy: string; // User ID
-    approvedBy?: string; // User ID
-    postText: string;
-    imageUrl?: string;
-    videoUrl?: string;
+export enum ContractType {
+  AgencyAgreement = 'Agency Agreement',
+  SellerToAgent = 'Seller-to-Agent Agreement',
+  BuyerToAgent = 'Buyer-to-Agent Agreement',
+  AgentToAgent = 'Agent-to-Agent Referral',
 }
 
 export enum ContractStatus {
-    Draft = 'Draft',
-    Signed = 'Signed',
-    Expired = 'Expired',
-}
-
-export enum ContractType {
-    AgencyAgreement = 'Agency Agreement',
-    AgentToAgent = 'Agent to Agent (Form I)',
-    SellerToAgent = 'Seller to Agent (Form A)',
-    BuyerToAgent = 'Buyer to Agent (Form B)',
+  Draft = 'Draft',
+  Signed = 'Signed',
+  Expired = 'Expired',
 }
 
 export interface Contract {
+  id: string;
+  type: ContractType;
+  partyName: string;
+  startDate: string; // ISO string
+  expiryDate: string; // ISO string
+  status: ContractStatus;
+  documentUrl: string;
+  createdBy: string; // userId
+}
+
+export interface Listing {
     id: string;
-    partyName: string;
-    type: ContractType;
-    status: ContractStatus;
-    startDate: string; // ISO string
-    expiryDate: string; // ISO string
-    documentUrl: string;
-    createdBy: string; // User ID
+    clientId: string;
+    title: string;
+    address: string;
+    price: number;
+    bedrooms: number;
+    bathrooms: number;
+    sqft: number;
+    imageUrl: string;
+    status: 'For Sale' | 'For Rent' | 'Sold';
+}
+
+export enum PropertyType {
+    Apartment = "Apartment",
+    Villa = "Villa",
+    Townhouse = "Townhouse",
+    Penthouse = "Penthouse",
+}
+  
+
+export enum ClientView {
+    Valuation = 'Valuate My Home',
+    Listings = 'My Listings',
+    AI = 'Ask AI Assistant',
+    Mortgage = 'Mortgage Calculator',
+    Vault = 'My Vault',
+}
+  
+export interface VaultDocument {
+    id: string;
+    clientId: string;
+    name: string;
+    type: 'Passport' | 'KYC' | 'SPA' | 'Title Deed' | 'Other';
+    uploadDate: string; // ISO string
+    url: string;
 }

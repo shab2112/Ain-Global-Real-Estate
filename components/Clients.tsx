@@ -69,8 +69,15 @@ const Clients: React.FC<ClientsProps> = ({ currentUser }) => {
             const extractedData = await extractClientFromCard(imageDataUrl);
             const driveId = await saveToGoogleDrive(imageDataUrl);
 
+            // FIX: Validate extracted data to ensure required fields are present before creating a client.
+            if (!extractedData.name || !extractedData.email || !extractedData.phone) {
+                throw new Error("Failed to extract complete client information from the card. Please check the image or enter details manually.");
+            }
+
             const newClientData = {
-                ...extractedData,
+                name: extractedData.name,
+                email: extractedData.email,
+                phone: extractedData.phone,
                 propertyAdvisorId: currentUser.id,
                 cardDriveId: driveId,
             };

@@ -1,0 +1,40 @@
+import { Listing } from '../types';
+
+export const mockListings: Listing[] = [
+  {
+    id: 'listing-1',
+    clientId: 'client-user-1',
+    title: 'Luxury Marina View Apartment',
+    address: 'Dubai Marina, Dubai',
+    price: 3500000,
+    bedrooms: 2,
+    bathrooms: 3,
+    sqft: 1450,
+    imageUrl: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto=format&fit=crop',
+    status: 'For Sale',
+  },
+  {
+    id: 'listing-2',
+    clientId: 'client-user-2',
+    title: 'Spacious Villa in Arabian Ranches',
+    address: 'Arabian Ranches, Dubai',
+    price: 6200000,
+    bedrooms: 4,
+    bathrooms: 5,
+    sqft: 3200,
+    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop',
+    status: 'For Sale',
+  },
+  {
+    id: 'listing-3',
+    clientId: 'client-user-1',
+    title: 'Penthouse with Panoramic Views',
+    address: 'Downtown Dubai, Dubai',
+    price: 15000000,
+    bedrooms: 3,
+    bathrooms: 4,
+    sqft: 2800,
+    imageUrl: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?q=80&w=2070&auto=format&fit=crop',
+    status: 'Sold',
+  },
+];

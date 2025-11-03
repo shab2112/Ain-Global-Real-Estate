@@ -22,7 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, currentU
     { id: 'market-intelligence', label: 'Market Intelligence', icon: ChartBarIcon },
     { id: 'clients', label: 'Client Registry', icon: UsersIcon },
     { id: 'contracts', label: 'Contracts', icon: ContractIcon, roles: [UserRole.Owner, UserRole.Admin] },
-    { id: 'master-prompts', label: 'Master Prompts', icon: BookmarkIcon },
+    { id: 'master-prompts', label: 'Master Prompts', icon: BookmarkIcon, roles: [UserRole.Owner, UserRole.Admin] },
   ];
 
   const navItems = isStaff

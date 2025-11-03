@@ -14,7 +14,7 @@ import ClientDashboard from './components/ClientDashboard';
 
 
 const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User>(mockUsers[2]); // Default to Property Advisor
+  const [currentUser, setCurrentUser] = useState<User>(mockUsers[5]); // Default to Client
   const [currentView, setCurrentView] = useState('dashboard');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -49,6 +49,10 @@ const App: React.FC = () => {
         }
         return <Contracts currentUser={currentUser} />;
       case 'master-prompts':
+        if (currentUser.role !== UserRole.Owner && currentUser.role !== UserRole.Admin) {
+          // Redirect non-privileged users to the dashboard
+          return <Dashboard currentUser={currentUser} />;
+        }
         return <MasterPrompts />;
       default:
         return <Dashboard currentUser={currentUser} />;

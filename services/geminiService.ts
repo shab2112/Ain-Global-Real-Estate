@@ -1,311 +1,219 @@
-import { GoogleGenAI, Type, FunctionDeclaration, Part, Modality } from "@google/genai";
-import { ChatMessage, MarketReportResult, GroundingChunk, Client } from '../types';
-import { getCampaignMetrics, getKnownDevelopersAndProjects, getScheduledContent } from './apiService';
+import { GoogleGenAI, GenerateContentResponse, Type, Modality } from "@google/genai";
+import { ChatMessage, Client, SocialPlatform, PropertyType } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// FIX: Initialize the Gemini AI client.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+
+const PRO_MODEL_NAME = 'gemini-2.5-pro';
+const FLASH_MODEL_NAME = 'gemini-2.5-flash';
+const IMAGE_MODEL_NAME = 'gemini-2.5-flash-image';
 
 export const generateMarketReport = async (
   primaryCity: string,
   comparisonCities: string[],
   selectedMetrics: string[]
-): Promise<MarketReportResult> => {
-  const prompt = `
-    You are a senior real estate market analyst. Generate a detailed market intelligence report comparing ${primaryCity} with the following cities: ${comparisonCities.join(', ')}.
-    Focus your analysis strictly on these metrics: ${selectedMetrics.join(', ')}.
-    
-    Structure the report in Markdown format. Start with a Level 1 Header (#) for the main title "Comparative Market Analysis: ${primaryCity}".
-    For each city, use a Level 2 Header (##) with the city name.
-    Under each city, use Level 3 Headers (###) for each of the selected metrics.
-    Provide a concise, data-driven analysis for each metric. Use bullet points (-) for key takeaways.
-    Conclude with a "## Key Takeaways" section summarizing the findings.
-    
-    Do not include any information or metrics not listed above. The report should be professional, objective, and easy to read.
-    Always include a "For Inquiries" section at the very end with the following Lockwood & Carter contact details:
-    - 📞 Call us at +971 56 4144401
-    - 📧 Email us at info@lockwoodandcarter.com
-    - 🌐 Visit our website: https://www.lockwoodandcarter.com/
-  `;
+) => {
+  const prompt = `Generate a detailed market intelligence report comparing the luxury real estate market in ${primaryCity} with ${comparisonCities.join(', ')}. Focus on the following metrics: ${selectedMetrics.join(', ')}. Provide a concise summary for each city, a comparative table, and an overall investment outlook. Use markdown for formatting.`;
 
-  try {
-    const model = 'gemini-2.5-flash';
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
+  // FIX: Use ai.models.generateContent with googleSearch tool.
+  const response = await ai.models.generateContent({
+    model: PRO_MODEL_NAME,
+    contents: prompt,
+    config: {
+      tools: [{ googleSearch: {} }],
+    },
+  });
 
-    const report = response.text;
-    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks as GroundingChunk[] || [];
+  const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+  
+  // NOTE: Token and cost calculation is a simulation.
+  const tokenCount = (response.text.length / 4); // Rough estimation
+  const cost = (tokenCount / 1000) * 0.0025; // Example cost for a model
 
-    return { report, sources };
-  } catch (error) {
-    console.error("Error generating market report:", error);
-    throw new Error("Failed to generate market report. Please check the API configuration.");
-  }
+  return {
+    report: response.text,
+    sources,
+    tokenCount,
+    cost,
+  };
 };
 
+export const extractClientFromCard = async (imageDataUrl: string): Promise<Partial<Client>> => {
+  const base64Data = imageDataUrl.split(',')[1];
 
-export const extractClientFromCard = async (imageDataUrl: string): Promise<Omit<Client, 'id' | 'propertyAdvisorId'>> => {
-    const base64Data = imageDataUrl.split(',')[1];
+  const imagePart = {
+    inlineData: {
+      data: base64Data,
+      mimeType: 'image/jpeg',
+    },
+  };
 
-    const imagePart = {
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: base64Data,
+  const textPart = {
+    text: "Extract the person's full name, email address, and phone number from this business card. Respond in JSON format.",
+  };
+
+  // FIX: Use ai.models.generateContent with responseSchema for JSON output.
+  const response = await ai.models.generateContent({
+    model: IMAGE_MODEL_NAME,
+    contents: { parts: [imagePart, textPart] },
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING },
+          email: { type: Type.STRING },
+          phone: { type: Type.STRING },
         },
-    };
+        required: ['name', 'email', 'phone'],
+      },
+    },
+  });
 
-    const textPart = {
-        text: 'Extract the full name, email address, and phone number from the business card image. The name should not contain titles like Mr. or CEO.'
-    };
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: { parts: [imagePart, textPart] },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        name: { type: Type.STRING },
-                        email: { type: Type.STRING },
-                        phone: { type: Type.STRING },
-                    },
-                    required: ["name", "email", "phone"],
-                },
-            },
-        });
-        
-        const jsonResponse = JSON.parse(response.text);
-        return jsonResponse;
-
-    } catch (error) {
-        console.error("Error extracting client from card:", error);
-        throw new Error("Could not extract details from the business card. Please try a clearer image.");
-    }
+  return JSON.parse(response.text);
 };
 
-export const generatePostCopy = async (masterPrompt: string, keywords: string, factsheet: string, platform: string, selectedAsset?: string): Promise<string> => {
+
+export const generateClientChatResponse = async (history: ChatMessage[]): Promise<ChatMessage> => {
+  const lastMessage = history[history.length - 1].content.toLowerCase();
+  
+  if (lastMessage.includes('nearby') || lastMessage.includes('around me') || lastMessage.includes('close to me')) {
+      if (!history.some(m => m.content.includes('System Info: User location'))) {
+        return {
+          role: 'model',
+          content: "To find properties near you, I'll need your current location. Can I access it?",
+          action: 'request_location'
+        };
+      }
+  }
+
+  // FIX: Use ai.models.generateContent for chat responses.
+  const response = await ai.models.generateContent({
+    model: FLASH_MODEL_NAME,
+    contents: `You are a helpful real estate assistant for Lockwood & Carter, serving high-net-worth clients interested in Dubai properties. Be polite, professional, and knowledgeable. Always include the company contact details (Phone: +971 56 4144401, Email: info@lockwoodandcarter.com, Website: https://www.lockwoodandcarter.com/) when appropriate, especially at the end of conversations. The user's message history is below. Provide a concise and helpful response to the latest message.\n\n${JSON.stringify(history)}`,
+    config: {
+      tools: [{googleSearch: {}}],
+    },
+  });
+
+  const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+  return { role: 'model', content: response.text, sources };
+};
+
+export const generateStaffChatResponse = async (history: ChatMessage[]): Promise<ChatMessage> => {
+    // FIX: Use ai.models.generateContent for staff-facing chat.
+    const response = await ai.models.generateContent({
+        model: FLASH_MODEL_NAME,
+        contents: `You are "Pro AI", an internal assistant for the real estate agency Lockwood & Carter. Staff will ask you about internal data like campaign performance, content schedules, and market data. Use the provided context to answer. Be direct and professional. The user's message history is below. Respond to the latest message.\n\n${JSON.stringify(history)}`,
+        config: {
+          tools: [{googleSearch: {}}],
+        },
+    });
+    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    return { role: 'model', content: response.text, sources };
+};
+
+export const generatePostCopy = async (
+  masterPrompt: string,
+  keywords: string,
+  factsheet: string,
+  platform: SocialPlatform,
+  assetName?: string
+): Promise<string> => {
+
   const fullPrompt = `
-    **MASTER PROMPT:**
-    ---
     ${masterPrompt}
-    ---
-    
-    **CONTEXT & DATA:**
-    Here is the factsheet for the property/project:
-    ---
-    ${factsheet}
-    ---
-    ${selectedAsset ? `The selected visual asset is named: "${selectedAsset}". Refer to it if relevant.` : ''}
 
-    **USER REQUEST:**
-    - Platform: ${platform}
-    - Keywords/Focus: "${keywords}"
+    ---
+    CONTEXT:
+    Factsheet: ${factsheet}
+    User Keywords: ${keywords}
+    Target Platform: ${platform}
+    ${assetName ? `Asset Name: ${assetName}` : ''}
+    ---
 
-    Based on all the information above, generate the social media post copy.
-    Strictly append the following contact information at the end of every post, each on a new line:
+    Generate the post copy now. Ensure it ends with the official company contact details:
     📞 Call us at +971 56 4144401
     📧 Email us at info@lockwoodandcarter.com
     🌐 Visit our website: https://www.lockwoodandcarter.com/
   `;
 
-  try {
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: fullPrompt,
-        config: {
-            systemInstruction: 'You are a professional real estate social media manager for Lockwood & Carter, a luxury agency.'
-        }
-    });
-    return response.text;
-  } catch (error) {
-      console.error("Error generating post copy:", error);
-      throw new Error("Failed to generate post copy. Please try again.");
+  // FIX: Use ai.models.generateContent for text generation.
+  const response = await ai.models.generateContent({
+    model: FLASH_MODEL_NAME,
+    contents: fullPrompt,
+  });
+
+  return response.text;
+};
+
+export const enhanceImage = async (imageUrl: string, prompt: string): Promise<string> => {
+  const base64Data = imageUrl.split(',')[1];
+  const mimeType = imageUrl.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
+
+  const imagePart = {
+    inlineData: {
+      data: base64Data,
+      mimeType: mimeType,
+    },
+  };
+  
+  const textPart = { text: `Enhance this real estate photo based on the following instruction: "${prompt}". Return only the enhanced image.` };
+
+  // FIX: Use ai.models.generateContent with responseModalities for image generation.
+  const response = await ai.models.generateContent({
+    model: IMAGE_MODEL_NAME,
+    contents: { parts: [imagePart, textPart] },
+    config: {
+        responseModalities: [Modality.IMAGE],
+    },
+  });
+  
+  const imageResponsePart = response.candidates?.[0]?.content.parts.find(p => p.inlineData);
+  if (imageResponsePart?.inlineData) {
+      return `data:${imageResponsePart.inlineData.mimeType};base64,${imageResponsePart.inlineData.data}`;
   }
+  throw new Error("AI did not return an enhanced image.");
 };
 
-export const enhanceImage = async (imageDataUrl: string, prompt: string): Promise<string> => {
-    const base64Data = imageDataUrl.split(',')[1];
-    const mimeType = imageDataUrl.split(';')[0].split(':')[1];
+export const generatePropertyValuation = async (
+    propertyType: PropertyType,
+    bedrooms: number,
+    size: number,
+    community: string
+): Promise<{ valueRange: string; commentary: string }> => {
+    const prompt = `Provide a realistic property valuation for a ${bedrooms}-bedroom ${propertyType} of ${size} sqft in the ${community} community of Dubai. 
+    Use your knowledge of the current Dubai real estate market. 
+    Respond in JSON format with two keys: "valueRange" (a string like "AED 2,500,000 - AED 2,750,000") and "commentary" (a brief 1-2 sentence explanation of the valuation).`;
 
-    const imagePart = {
-        inlineData: {
-          mimeType: mimeType,
-          data: base64Data,
-        },
-    };
-
-    const textPart = { text: prompt };
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts: [imagePart, textPart] },
-            config: {
-                responseModalities: [Modality.IMAGE],
+    const response = await ai.models.generateContent({
+        model: PRO_MODEL_NAME,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    valueRange: { type: Type.STRING },
+                    commentary: { type: Type.STRING },
+                },
+                required: ['valueRange', 'commentary'],
             },
-        });
+            tools: [{ googleSearch: {} }]
+        },
+    });
 
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-                return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-            }
-        }
-        throw new Error("No image was generated by the model.");
-
-    } catch (error) {
-        console.error("Error enhancing image:", error);
-        throw new Error("Failed to enhance the image. The model may not support this request.");
-    }
+    return JSON.parse(response.text);
 };
 
-export const generateVideoWithHeyGen = async (prompt: string, apiKey: string, inputAssetUrl?: string): Promise<string> => {
-    console.log("SIMULATING: Calling HeyGen API to generate video.");
-    console.log("Prompt:", prompt);
-    console.log("Input Asset:", inputAssetUrl || "None");
-    
-    if (!apiKey) {
-        throw new Error("HeyGen API Key is required for video generation.");
-    }
-    
-    // In a real application, this would be an actual fetch call to the HeyGen API.
-    // The response handling would be based on HeyGen's documentation for long-running jobs.
+
+// This is a mock as we can't call external APIs.
+export const generateVideoWithHeyGen = async (prompt: string, apiKey: string, imageUrl?: string): Promise<string> => {
+    console.log("SIMULATING HeyGen Video Generation with prompt:", prompt, "and apiKey:", apiKey, "imageUrl:", imageUrl);
     return new Promise(resolve => {
         setTimeout(() => {
-            console.log("SIMULATION: HeyGen video generation complete.");
             // Return a placeholder video URL
             resolve("https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4");
-        }, 8000); // Simulate an 8-second generation time
+        }, 5000); // Simulate a 5-second generation time
     });
-};
-
-export const generateClientChatResponse = async (history: ChatMessage[]): Promise<ChatMessage> => {
-    const model = 'gemini-2.5-flash';
-
-    const requestUserLocationDeclaration: FunctionDeclaration = {
-        name: 'request_user_location',
-        description: 'Asks the application to request the user\'s current geolocation when they ask for things "nearby", "close to me", or use other similar phrases, but have not provided a specific location.',
-        parameters: { type: Type.OBJECT, properties: {} }
-    };
-    
-    const contents = history.map(msg => ({
-        role: msg.role === 'model' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-    }));
-
-    const systemInstruction = `You are a helpful and friendly real estate assistant for Lockwood & Carter, specializing in the Dubai market. Be professional, concise, and always aim to help the client. If the user asks for something nearby without specifying a location, you must use the 'request_user_location' tool. If asked, your contact details are: Call +971 56 4144401, Email info@lockwoodandcarter.com, or visit https://www.lockwoodandcarter.com/.`;
-
-    try {
-        const response = await ai.models.generateContent({
-            model: model,
-            contents: contents,
-            config: {
-                systemInstruction: systemInstruction,
-                tools: [{ functionDeclarations: [requestUserLocationDeclaration], googleMaps: {} }]
-            }
-        });
-
-        if (response.functionCalls && response.functionCalls.length > 0) {
-            if (response.functionCalls[0].name === 'request_user_location') {
-                return {
-                    role: 'model',
-                    content: "Of course. To find what's nearby, I need to know your current location. Could you please allow location access when your browser prompts you?",
-                    action: 'request_location'
-                };
-            }
-        }
-
-        return {
-            role: 'model',
-            content: response.text,
-            sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks as GroundingChunk[] || [],
-        };
-    } catch (error) {
-        console.error("Error in client chat response:", error);
-        throw new Error("Sorry, I encountered an issue. Please try again.");
-    }
-};
-
-export const generateStaffChatResponse = async (history: ChatMessage[]): Promise<ChatMessage> => {
-    const model = 'gemini-2.5-flash';
-    
-    const tools: FunctionDeclaration[] = [
-        {
-            name: 'get_known_developers_and_projects',
-            description: 'Retrieves a list of key real estate developers and their flagship projects.',
-            parameters: { type: Type.OBJECT, properties: {} }
-        },
-        {
-            name: 'get_campaign_metrics',
-            description: 'Gets the latest marketing campaign performance metrics, such as spend, leads, and CPL.',
-            parameters: { type: Type.OBJECT, properties: {} }
-        },
-        {
-            name: 'get_scheduled_content',
-            description: 'Fetches the upcoming social media and content schedule for the week.',
-            parameters: { type: Type.OBJECT, properties: {} }
-        }
-    ];
-
-    const systemInstruction = `You are Pro AI, an internal assistant for Lockwood & Carter real estate agency. You have access to internal company data through tools. Be professional and provide concise answers based on the data retrieved. When asked about developers, projects, campaign performance, or content schedules, you MUST use the provided tools to get the information.`;
-
-    const contents = history.map(msg => ({
-        role: msg.role === 'model' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-    }));
-
-    try {
-        let response = await ai.models.generateContent({
-            model: model,
-            contents: contents,
-            config: {
-                systemInstruction: systemInstruction,
-                tools: [{ functionDeclarations: tools }]
-            }
-        });
-        
-        if (response.functionCalls && response.functionCalls.length > 0) {
-            const functionCall = response.functionCalls[0];
-            let functionResponseData;
-
-            if (functionCall.name === 'get_known_developers_and_projects') {
-                functionResponseData = await getKnownDevelopersAndProjects();
-            } else if (functionCall.name === 'get_campaign_metrics') {
-                functionResponseData = await getCampaignMetrics();
-            } else if (functionCall.name === 'get_scheduled_content') {
-                functionResponseData = await getScheduledContent();
-            } else {
-                throw new Error(`Unknown function call: ${functionCall.name}`);
-            }
-
-            const functionResponsePart: Part = {
-                functionResponse: {
-                    name: functionCall.name,
-                    response: { result: JSON.stringify(functionResponseData) },
-                },
-            };
-            
-            const secondResponse = await ai.models.generateContent({
-                model: model,
-                contents: [...contents, { role: 'model', parts: [{ functionCall: functionCall }]}, { role: 'user', parts: [functionResponsePart] }],
-                 config: {
-                    systemInstruction: systemInstruction,
-                    tools: [{ functionDeclarations: tools }]
-                }
-            });
-            response = secondResponse;
-        }
-
-        return {
-            role: 'model',
-            content: response.text
-        };
-    } catch (error) {
-        console.error("Error in staff chat response:", error);
-        throw new Error("Sorry, I encountered an issue while processing your request.");
-    }
 };

@@ -1,6 +1,6 @@
 import { GoogleGenAI, Modality, GenerateContentResponse, Type } from "@google/genai";
 import { SocialPlatform, ChatMessage } from '../types';
-import { getKnownDevelopersAndProjects } from "./apiService";
+import { getKnownDevelopersAndProjects, getCampaignMetrics, getScheduledContent } from "./apiService";
 
 // Assume process.env.API_KEY is available
 const API_KEY = process.env.API_KEY;
@@ -28,11 +28,17 @@ const getPlatformInstruction = (platform: SocialPlatform): string => {
   }
 };
 
-export const generateText = async (prompt: string, platform: SocialPlatform): Promise<string> => {
+export const generateText = async (prompt: string, platform: SocialPlatform, factsheetContent?: string): Promise<string> => {
   const model = 'gemini-2.5-flash';
   const platformInstruction = getPlatformInstruction(platform);
-  const fullPrompt = `You are an expert real estate marketer for Ain Global, a luxury real estate firm. 
+
+  const contextInstruction = factsheetContent 
+    ? `You MUST use the following project factsheet as your primary source of truth for this post: \n---BEGIN FACTSHEET---\n${factsheetContent}\n---END FACTSHEET---`
+    : 'You should use your general knowledge of luxury real estate.';
+
+  const fullPrompt = `You are an expert real estate marketer for Lucra Pro AI, a luxury real estate firm. 
 Generate a compelling social media post for the ${platform} platform.
+${contextInstruction}
 **Platform Specific Instructions:** ${platformInstruction}
 **Core Topic/Keywords:** ${prompt}
 Generate only the text for the post body.`;
@@ -146,7 +152,7 @@ export const generateMarketReport = async (primaryCity: string, comparisonCities
 `;
     
     const fullPrompt = `
-You are a world-class real estate market intelligence engine for Ain Global. Your task is to query trusted data sources, normalize metrics, and deliver a standardized, data-driven report.
+You are a world-class real estate market intelligence engine for Lucra Pro AI. Your task is to query trusted data sources, normalize metrics, and deliver a standardized, data-driven report.
 You MUST use the provided sources to ground your answers. All monetary values must be normalized to USD (e.g., price per square foot in USD).
 When analyzing the "Currency Stability & Exchange Rate" metric, you must provide a clear comparison of the local currency's performance against the USD. For the most recent 12-month period, you MUST include the starting exchange rate, the current exchange rate, and the percentage of depreciation or appreciation. For example: "The Indian Rupee (INR) depreciated 5.45% against the USD over the last 12 months, moving from ~84.10 to ~88.67." Then, explicitly state the potential impact of this change on returns for a USD-based foreign investor.
 
@@ -256,7 +262,7 @@ export const generateClientChatResponse = async (history: ChatMessage[]): Promis
     const model = 'gemini-2.5-flash';
     const internalData = await getKnownDevelopersAndProjects();
 
-    const systemInstruction = `You are a sophisticated, friendly, and expert AI real estate advisor for Ain Global, a luxury real estate brokerage in Dubai. Your goal is to guide clients through a structured and helpful property search conversation.
+    const systemInstruction = `You are a sophisticated, friendly, and expert AI real estate advisor for Lucra Pro AI, a luxury real estate brokerage in Dubai. Your goal is to guide clients through a structured and helpful property search conversation.
 
 Follow this multi-step process strictly:
 
@@ -319,6 +325,65 @@ Ground all other market-related answers in real-time data using the provided Goo
         };
     } catch (error) {
         console.error("Error generating client chat response:", error);
+        throw new Error("I'm sorry, I encountered an error trying to process your request. Please try again.");
+    }
+};
+
+
+export const generateStaffChatResponse = async (history: ChatMessage[]): Promise<ChatMessage> => {
+    const model = 'gemini-2.5-flash';
+    // Fetch all necessary RAG data in parallel
+    const [campaignData, contentData, propertyData] = await Promise.all([
+        getCampaignMetrics(),
+        getScheduledContent(),
+        getKnownDevelopersAndProjects(),
+    ]);
+
+    const systemInstruction = `You are "Pro AI", an internal AI assistant for Lucra Pro AI, a luxury real estate brokerage. Your role is to provide quick, data-driven answers to staff members (Owners, Admins, and Property Advisors).
+
+You have access to the following internal real-time data:
+1.  **Campaign Metrics:** ${JSON.stringify(campaignData)}
+2.  **Scheduled Content:** ${JSON.stringify(contentData)}
+3.  **Property & Developer Data:** ${propertyData}
+
+**Your Capabilities:**
+-   You can answer questions about marketing campaign performance (e.g., "how many leads did we get last month?").
+-   You can report on the content schedule (e.g., "what content is planned for this week?").
+-   You can summarize key information about developers and projects.
+-   You can perform analysis and generate summaries based on the provided data.
+-   Use Google Search for any external information or current events not present in your internal data.
+
+**Response Guidelines:**
+-   Be concise and professional.
+-   When providing data, present it clearly, using markdown tables if multiple items are involved.
+-   Always state the source of your information (e.g., "According to the latest campaign metrics...").
+-   If you cannot answer a question with the provided data, state that clearly. Do not invent information.`;
+
+    const contents = history.map(msg => ({
+        role: msg.role,
+        parts: [{ text: msg.content }]
+    }));
+
+    try {
+        const response: GenerateContentResponse = await ai.models.generateContent({
+            model: model,
+            contents: {
+                role: 'user',
+                parts: contents.flatMap(c => c.parts)
+            },
+            config: {
+                systemInstruction: systemInstruction,
+                tools: [{googleSearch: {}}],
+            },
+        });
+
+        return {
+            role: 'model',
+            content: response.text,
+            sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || [],
+        };
+    } catch (error) {
+        console.error("Error generating staff chat response:", error);
         throw new Error("I'm sorry, I encountered an error trying to process your request. Please try again.");
     }
 };

@@ -1,9 +1,35 @@
+import { driveData } from '../data/driveMockData';
+import { DriveProject } from '../types';
+
 /**
- * NOTE: This is a placeholder service to simulate uploading a file to Google Drive.
- * A real implementation would require a secure backend server to handle OAuth 2.0
- * authentication with the Google Drive API, manage tokens, and perform the upload.
- * Exposing API keys or handling the full OAuth flow on the client-side is not secure.
+ * NOTE: This is a placeholder service to simulate fetching data from a structured
+ * Google Drive account. A real implementation would use the Google Drive API
+ * via a secure backend server.
  */
+
+const apiDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+/**
+ * Simulates fetching the list of all project folders from Google Drive.
+ * @returns A promise that resolves with an array of project overviews.
+ */
+export const getDriveProjects = async (): Promise<Omit<DriveProject, 'assets'>[]> => {
+  await apiDelay(400); // Simulate network latency
+  console.log("SIMULATING: Fetched all project folders from Google Drive.");
+  return driveData.map(p => ({ id: p.id, name: p.name }));
+};
+
+/**
+ * Simulates fetching all assets for a specific project from its folder in Google Drive.
+ * @param projectId The ID of the project to fetch assets for.
+ * @returns A promise that resolves with the full project data including all assets.
+ */
+export const getProjectAssets = async (projectId: string): Promise<DriveProject | undefined> => {
+    await apiDelay(600); // Simulate network latency
+    console.log(`SIMULATING: Fetched assets for project ${projectId} from Google Drive.`);
+    return driveData.find(p => p.id === projectId);
+};
+
 
 /**
  * Simulates uploading an image file to Google Drive.

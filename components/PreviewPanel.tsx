@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SocialPlatform } from '../types';
 import { FacebookIcon } from './icons/FacebookIcon';
@@ -35,10 +34,10 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ platform, text, image }) =>
       <div className="flex-1 bg-brand-primary rounded-lg p-4 overflow-y-auto border border-brand-accent">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 bg-brand-gold rounded-full flex items-center justify-center font-bold text-brand-primary">
-            AG
+            LP
           </div>
           <div>
-            <p className="font-bold text-brand-text">Ain Global</p>
+            <p className="font-bold text-brand-text">Lucra Pro</p>
             <p className="text-xs text-brand-light">Just now</p>
           </div>
         </div>

@@ -12,7 +12,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
       <div 
         className="absolute inset-0 bg-cover bg-center z-0"
         style={{ 
-          backgroundImage: `url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
+          backgroundImage: `url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop&ixlib-rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')`,
         }}
       >
         {/* Overlay */}
@@ -26,7 +26,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           <div className="flex items-center gap-3">
             <SparklesIcon className="w-8 h-8 text-brand-gold" />
             <h1 className="text-xl md:text-2xl font-bold text-brand-text tracking-wider">
-              Ain Global <span className="text-brand-gold">Pro AI</span>
+              Lucra Pro <span className="text-brand-gold">AI</span>
             </h1>
           </div>
         </header>
@@ -49,7 +49,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
         
         {/* Footer */}
         <footer className="p-4 text-center text-brand-light text-sm">
-            <p>&copy; {new Date().getFullYear()} Ain Global. All Rights Reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Lucra Pro. All Rights Reserved.</p>
         </footer>
       </div>
     </div>

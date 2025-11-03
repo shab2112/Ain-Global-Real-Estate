@@ -1,5 +1,6 @@
-import { User, Client, UserRole } from '../types';
+import { User, Client, UserRole, ContentPost } from '../types';
 import { mockUsers, mockClients } from '../data/mockData';
+import { mockScheduledPosts } from '../data/driveMockData';
 
 // =================================================================
 // NOTE: This is a placeholder API service.
@@ -12,6 +13,7 @@ import { mockUsers, mockClients } from '../data/mockData';
 const apiDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 let inMemoryClients: Client[] = [...mockClients];
+let inMemoryPosts: ContentPost[] = [...mockScheduledPosts];
 
 /**
  * Fetches all users. In a real app, this would be an API call.
@@ -62,13 +64,83 @@ export const getKnownDevelopersAndProjects = async (): Promise<string> => {
     `;
 };
 
+/**
+ * SIMULATES fetching campaign metrics for the RAG system.
+ */
+export const getCampaignMetrics = async (): Promise<any> => {
+    await apiDelay(150);
+    console.log("API_SERVICE: Fetched campaign metrics for RAG.");
+    return {
+        lastMonth: {
+            totalCampaigns: 5,
+            totalSpend: "15,000 USD",
+            leadsGenerated: 120,
+            costPerLead: "125 USD",
+            topPerformingCampaign: "Masaar Launch - Facebook",
+        },
+        thisMonth: {
+            activeCampaigns: 3,
+            currentSpend: "8,000 USD",
+            leadsGenerated: 65,
+        }
+    };
+}
 
-// Future functions for a real backend:
-//
-// export const updateClient = async (clientId: string, updates: Partial<Client>): Promise<Client> => {
-//   // In a real app: PUT /api/clients/{clientId}
-// };
-//
-// export const deleteClient = async (clientId: string): Promise<void> => {
-//   // In a real app: DELETE /api/clients/{clientId}
-// };
+/**
+ * SIMULATES fetching scheduled content for the RAG system.
+ */
+export const getScheduledContent = async (): Promise<any> => {
+    await apiDelay(150);
+    console.log("API_SERVICE: Fetched scheduled content for RAG.");
+    return [
+        { date: "Monday", topic: "Video tour of Dubai Hills penthouse", platform: "YouTube, Instagram" },
+        { date: "Wednesday", topic: "Blog post on 'Top 5 Family Communities in Dubai'", platform: "LinkedIn, Website" },
+        { date: "Friday", topic: "Market update infographic for Q3", platform: "Facebook, LinkedIn" },
+    ];
+};
+
+
+// === CONTENT STUDIO API ===
+
+/**
+ * Fetches all scheduled content posts.
+ */
+export const getScheduledPosts = async (): Promise<ContentPost[]> => {
+    await apiDelay(500);
+    console.log("API_SERVICE: Fetched all scheduled posts.");
+    return [...inMemoryPosts];
+};
+
+/**
+ * Creates a new content post.
+ */
+export const createContentPost = async (postData: Omit<ContentPost, 'id'>): Promise<ContentPost> => {
+    await apiDelay(400);
+    const newPost: ContentPost = {
+        id: `post_${Date.now()}`,
+        ...postData
+    };
+    inMemoryPosts.push(newPost);
+    console.log("API_SERVICE: Created new content post.", newPost);
+    return newPost;
+};
+
+/**
+ * Updates an existing content post.
+ */
+export const updateContentPost = async (postId: string, updates: Partial<ContentPost>): Promise<ContentPost> => {
+    await apiDelay(300);
+    let updatedPost: ContentPost | undefined;
+    inMemoryPosts = inMemoryPosts.map(post => {
+        if (post.id === postId) {
+            updatedPost = { ...post, ...updates };
+            return updatedPost;
+        }
+        return post;
+    });
+    if (!updatedPost) {
+        throw new Error("Post not found");
+    }
+    console.log("API_SERVICE: Updated content post.", updatedPost);
+    return updatedPost;
+};

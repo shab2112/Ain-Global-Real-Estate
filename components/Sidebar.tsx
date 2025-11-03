@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { View } from '../types';
 import { HomeIcon } from './icons/HomeIcon';
@@ -13,7 +14,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeView, onNavigate }) => {
   const navItems = [
-    { id: View.Dashboard, name: 'Dashboard', icon: HomeIcon, disabled: true },
+    { id: View.Dashboard, name: 'Dashboard', icon: HomeIcon, disabled: false },
     { id: View.ContentStudio, name: 'Content Studio', icon: DocumentTextIcon, disabled: false },
     { id: View.Campaigns, name: 'Campaigns', icon: CampaignIcon, disabled: true },
     { id: View.MarketIntelligence, name: 'Market Intelligence', icon: ChartBarIcon, disabled: false },

@@ -2,6 +2,7 @@ import React from 'react';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { User } from '../types';
 import UserSwitcher from './UserSwitcher';
+import NotificationBell from './NotificationBell';
 
 interface HeaderProps {
   currentUser: User;
@@ -15,14 +16,17 @@ const Header: React.FC<HeaderProps> = ({ currentUser, setCurrentUser, allUsers }
       <div className="flex items-center gap-3">
         <SparklesIcon className="w-8 h-8 text-brand-gold" />
         <h1 className="text-xl md:text-2xl font-bold text-brand-text tracking-wider">
-          Ain Global <span className="text-brand-gold">Pro AI</span>
+          Lucra Pro <span className="text-brand-gold">AI</span>
         </h1>
       </div>
-      <UserSwitcher 
-        users={allUsers} 
-        selectedUser={currentUser} 
-        onSelectUser={setCurrentUser} 
-      />
+      <div className="flex items-center gap-4">
+        <NotificationBell currentUser={currentUser} />
+        <UserSwitcher 
+          users={allUsers} 
+          selectedUser={currentUser} 
+          onSelectUser={setCurrentUser} 
+        />
+      </div>
     </header>
   );
 };

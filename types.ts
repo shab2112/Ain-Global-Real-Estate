@@ -1,3 +1,5 @@
+
+// FIX: Removed self-import of `SocialPlatform` which was causing a conflict with the local declaration.
 export enum SocialPlatform {
   Facebook = 'Facebook',
   LinkedIn = 'LinkedIn',
@@ -17,6 +19,18 @@ export enum UserRole {
   Admin = 'Admin',
   PropertyAdvisor = 'Property Advisor',
   Client = 'Client',
+}
+
+export enum ChatMode {
+  Staff = 'Staff',
+  Client = 'Client',
+}
+
+export enum PostStatus {
+    Draft = 'Draft',
+    PendingApproval = 'Pending Approval',
+    Approved = 'Approved',
+    Published = 'Published',
 }
 
 export interface User {
@@ -46,4 +60,32 @@ export interface ChatSession {
   id: string;
   title: string;
   messages: ChatMessage[];
+}
+
+// Types for simulated Google Drive data
+export interface DriveAsset {
+    id: string;
+    name: string;
+    type: 'image' | 'video' | 'brochure' | 'factsheet' | 'walkthrough';
+    url: string; // For images/videos, this would be a direct link or base64 string
+    content?: string; // For factsheets
+}
+  
+export interface DriveProject {
+    id: string;
+    name: string;
+    assets: DriveAsset[];
+}
+
+// Type for a scheduled content post
+export interface ContentPost {
+    id: string;
+    projectId: string;
+    platform: SocialPlatform;
+    status: PostStatus;
+    scheduledDate: string; // ISO string
+    createdBy: string; // User ID
+    approvedBy?: string; // User ID
+    postText: string;
+    imageUrl?: string;
 }

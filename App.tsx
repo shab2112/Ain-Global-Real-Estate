@@ -20,7 +20,7 @@ const App: React.FC = () => {
       case View.Dashboard:
         return <Dashboard currentUser={currentUser} />;
       case View.ContentStudio:
-        return <ContentStudio />;
+        return <ContentStudio currentUser={currentUser} />;
       case View.MarketIntelligence:
         return <MarketIntelligence />;
       case View.Clients:

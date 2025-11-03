@@ -11,8 +11,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUser }) => {
     const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
-        // Only owners and admins should see notifications
-        if (currentUser.role !== UserRole.Owner && currentUser.role !== UserRole.Admin) {
+        // Only staff members (not clients) should see notifications
+        if (currentUser.role === UserRole.Client) {
             setPendingCount(0);
             return;
         }
@@ -35,7 +35,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ currentUser }) => {
     }, [currentUser.role]);
 
 
-    if (currentUser.role !== UserRole.Owner && currentUser.role !== UserRole.Admin) {
+    // Do not render the bell for clients
+    if (currentUser.role === UserRole.Client) {
         return null;
     }
 

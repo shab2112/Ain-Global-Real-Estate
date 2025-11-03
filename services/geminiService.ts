@@ -28,7 +28,7 @@ const getPlatformInstruction = (platform: SocialPlatform): string => {
   }
 };
 
-export const generateText = async (prompt: string, platform: SocialPlatform, factsheetContent?: string): Promise<string> => {
+export const generateText = async (creativeBrief: string, platform: SocialPlatform, factsheetContent?: string): Promise<string> => {
   const model = 'gemini-2.5-flash';
   const platformInstruction = getPlatformInstruction(platform);
 
@@ -36,12 +36,20 @@ export const generateText = async (prompt: string, platform: SocialPlatform, fac
     ? `You MUST use the following project factsheet as your primary source of truth for this post: \n---BEGIN FACTSHEET---\n${factsheetContent}\n---END FACTSHEET---`
     : 'You should use your general knowledge of luxury real estate.';
 
-  const fullPrompt = `You are an expert real estate marketer for Lucra Pro AI, a luxury real estate firm. 
-Generate a compelling social media post for the ${platform} platform.
+  const fullPrompt = `
+Based on the following creative brief, generate a social media post.
+Your client is Lucra Pro AI, a luxury real estate firm.
+
+--- CREATIVE BRIEF ---
+${creativeBrief}
+--- END BRIEF ---
+
 ${contextInstruction}
+
 **Platform Specific Instructions:** ${platformInstruction}
-**Core Topic/Keywords:** ${prompt}
-Generate only the text for the post body.`;
+
+**Final Task:** Generate ONLY the text for the social media post body based on all the instructions provided.
+`;
 
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({

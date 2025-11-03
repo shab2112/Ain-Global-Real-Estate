@@ -3,6 +3,8 @@ import { ContentPost, DriveProject, PostStatus, User, UserRole } from '../types'
 import { getProjectAssets } from '../services/googleDriveService';
 import { getScheduledPosts, updateContentPost } from '../services/apiService';
 import ContentCreationModal from './ContentCreationModal';
+import { ImageIcon } from './icons/ImageIcon';
+import { VideoIcon } from './icons/VideoIcon';
 
 interface ContentPlannerProps {
   projectId: string;
@@ -127,9 +129,13 @@ const ContentPlanner: React.FC<ContentPlannerProps> = ({ projectId, currentUser 
               <div className="font-semibold text-xs">{day.getDate()}</div>
               {dayPosts.map(post => {
                  const isOverdue = post.status === PostStatus.PendingApproval && (new Date(post.scheduledDate).getTime() - Date.now()) < 24 * 60 * 60 * 1000 && (new Date(post.scheduledDate).getTime() > Date.now());
+                 const PostIcon = post.postType === 'Video' ? VideoIcon : ImageIcon;
                  return (
                     <div key={post.id} className={`p-1.5 rounded-md text-xs cursor-pointer ring-1 ${getStatusStyles(post.status, isOverdue)}`}>
-                       <div className="font-bold truncate" onClick={() => handleOpenModalForEdit(post)}>{post.platform} Post</div>
+                       <div className="font-bold truncate flex items-center gap-1.5" onClick={() => handleOpenModalForEdit(post)}>
+                         <PostIcon className="w-3.5 h-3.5 shrink-0" />
+                         {post.platform} Post
+                       </div>
                        <div className="flex justify-between items-center mt-1">
                           <span className="text-xs opacity-80">{post.status}</span>
                           {canApprove && post.status === PostStatus.PendingApproval && (

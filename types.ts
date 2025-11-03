@@ -1,4 +1,3 @@
-
 // FIX: Removed self-import of `SocialPlatform` which was causing a conflict with the local declaration.
 export enum SocialPlatform {
   Facebook = 'Facebook',
@@ -31,6 +30,11 @@ export enum PostStatus {
     PendingApproval = 'Pending Approval',
     Approved = 'Approved',
     Published = 'Published',
+}
+
+export enum PostType {
+  Image = 'Image',
+  Video = 'Video',
 }
 
 export interface User {
@@ -82,6 +86,7 @@ export interface ContentPost {
     id: string;
     projectId: string;
     platform: SocialPlatform;
+    postType: PostType;
     status: PostStatus;
     scheduledDate: string; // ISO string
     createdBy: string; // User ID

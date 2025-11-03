@@ -120,7 +120,8 @@ export const createContentPost = async (postData: Omit<ContentPost, 'id'>): Prom
         id: `post_${Date.now()}`,
         ...postData
     };
-    inMemoryPosts.push(newPost);
+    // FIX: Replaced array mutation (.push) with an immutable update to ensure React change detection works reliably.
+    inMemoryPosts = [newPost, ...inMemoryPosts];
     console.log("API_SERVICE: Created new content post.", newPost);
     return newPost;
 };

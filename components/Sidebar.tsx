@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { View } from '../types';
 import { HomeIcon } from './icons/HomeIcon';

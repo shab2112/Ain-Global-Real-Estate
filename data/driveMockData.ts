@@ -1,4 +1,4 @@
-import { DriveProject, ContentPost, PostStatus, SocialPlatform } from '../types';
+import { DriveProject, ContentPost, PostStatus, SocialPlatform, PostType } from '../types';
 
 const getFutureDate = (weeks: number, dayOfWeek: number) => { // 0=Sun, 1=Mon...
     const date = new Date();
@@ -96,6 +96,7 @@ export const mockScheduledPosts: ContentPost[] = [
         id: 'post-1',
         projectId: 'proj-001',
         platform: SocialPlatform.Facebook,
+        postType: PostType.Image,
         status: PostStatus.Approved,
         scheduledDate: getFutureDate(0, 3), // This Wednesday
         createdBy: 'user-3',
@@ -107,6 +108,7 @@ export const mockScheduledPosts: ContentPost[] = [
         id: 'post-2',
         projectId: 'proj-002',
         platform: SocialPlatform.LinkedIn,
+        postType: PostType.Image,
         status: PostStatus.PendingApproval,
         scheduledDate: getFutureDate(0, 5), // This Friday
         createdBy: 'user-4',
@@ -117,10 +119,11 @@ export const mockScheduledPosts: ContentPost[] = [
         id: 'post-3',
         projectId: 'proj-003',
         platform: SocialPlatform.Facebook,
+        postType: PostType.Image,
         status: PostStatus.Draft,
         scheduledDate: getFutureDate(1, 1), // Next Monday
         createdBy: 'user-5',
         postText: '',
         imageUrl: ''
     }
-]
+];

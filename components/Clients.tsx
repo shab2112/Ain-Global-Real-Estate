@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { User, Client, UserRole } from '../types';
+// FIX: The geminiService file is no longer empty, so this import will work.
 import { extractClientFromCard } from '../services/geminiService';
 import { saveToGoogleDrive } from '../services/googleDriveService';
 import { getClients, createClient } from '../services/apiService';

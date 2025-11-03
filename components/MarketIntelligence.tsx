@@ -1,5 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { generateMarketReport, MarketReportResult } from '../services/geminiService';
+// FIX: The geminiService file is no longer empty, so this import will work.
+import { generateMarketReport } from '../services/geminiService';
+import { MarketReportResult } from '../types';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { ChartBarIcon } from './icons/ChartBarIcon';
 import { TokenIcon } from './icons/TokenIcon';
@@ -23,7 +25,7 @@ const METRIC_CATEGORIES = [
 ];
 
 const MarketIntelligence: React.FC = () => {
-  const [primaryCity, setPrimaryCity] = useState<string>(CITIES[0]);
+  const [primaryCity, setPrimaryCity] = useState<string>(CITIES[4]);
   const [comparisonCities, setComparisonCities] = useState<string[]>(['London', 'New York', 'Singapore']);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['Pricing', 'Investment Returns', 'Market Activity']);
   const [result, setResult] = useState<MarketReportResult | null>(null);
@@ -188,7 +190,7 @@ const MarketIntelligence: React.FC = () => {
                         {result.tokenCount && (
                             <div className="bg-brand-primary/50 text-brand-light text-sm p-3 rounded-lg flex items-center gap-3">
                                 <TokenIcon className="w-5 h-5 text-brand-gold" />
-                                <span>Report generated using <strong>{result.tokenCount}</strong> tokens.</span>
+                                <span>Report generated using <strong>{result.tokenCount.toFixed(0)}</strong> tokens.</span>
                             </div>
                         )}
                         {result.cost !== undefined && (

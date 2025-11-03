@@ -1,59 +1,75 @@
+
 import React from 'react';
-import { SocialPlatform } from '../types';
+import { SocialPlatform, User } from '../types';
 import { FacebookIcon } from './icons/FacebookIcon';
 import { LinkedInIcon } from './icons/LinkedInIcon';
 import { YouTubeIcon } from './icons/YouTubeIcon';
+import { mockUsers } from '../data/mockData';
 
 interface PreviewPanelProps {
   platform: SocialPlatform;
-  text: string;
+  postText: string;
   image: string | null;
+  currentUser: User;
 }
 
-const PlatformHeader: React.FC<{ platform: SocialPlatform }> = ({ platform }) => {
-    const platformDetails = {
-      [SocialPlatform.Facebook]: { Icon: FacebookIcon, name: 'Facebook Preview', color: 'text-blue-500' },
-      [SocialPlatform.LinkedIn]: { Icon: LinkedInIcon, name: 'LinkedIn Preview', color: 'text-blue-400' },
-      [SocialPlatform.YouTube]: { Icon: YouTubeIcon, name: 'YouTube Preview', color: 'text-red-500' },
-    };
-  
-    const { Icon, name, color } = platformDetails[platform];
-  
-    return (
-      <div className="flex items-center gap-2 mb-4">
-        <Icon className={`w-6 h-6 ${color}`} />
-        <h3 className="text-lg font-semibold text-brand-text">{name}</h3>
-      </div>
-    );
+const platformIcons = {
+  [SocialPlatform.Facebook]: FacebookIcon,
+  [SocialPlatform.LinkedIn]: LinkedInIcon,
+  [SocialPlatform.YouTube]: YouTubeIcon,
+  [SocialPlatform.Instagram]: FacebookIcon, // Placeholder
+  [SocialPlatform.Twitter]: FacebookIcon, // Placeholder
 };
 
-const PreviewPanel: React.FC<PreviewPanelProps> = ({ platform, text, image }) => {
+const PreviewPanel: React.FC<PreviewPanelProps> = ({ platform, postText, image, currentUser }) => {
+  const PlatformIcon = platformIcons[platform];
+  const user = mockUsers.find(u => u.role === 'Owner') || currentUser; // mock agency profile
+
   return (
-    <div className="bg-brand-secondary p-6 rounded-xl shadow-lg h-full flex flex-col">
-      <PlatformHeader platform={platform} />
-      <div className="flex-1 bg-brand-primary rounded-lg p-4 overflow-y-auto border border-brand-accent">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 bg-brand-gold rounded-full flex items-center justify-center font-bold text-brand-primary">
-            LP
+    <div className="bg-brand-secondary p-6 rounded-xl shadow-lg flex flex-col gap-4 h-full">
+      <h3 className="text-lg font-semibold text-brand-text">5. Live Preview</h3>
+      <div className="flex-1 bg-brand-primary border border-brand-accent rounded-lg p-4 overflow-y-auto">
+        <div className="w-full max-w-md mx-auto">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-brand-gold text-brand-primary flex items-center justify-center font-bold">
+              {user.avatar}
+            </div>
+            <div>
+              <p className="font-bold text-sm text-brand-text">{user.name} Properties</p>
+              <p className="text-xs text-brand-light flex items-center gap-1">
+                Sponsored <span className="font-bold">·</span> <PlatformIcon className="w-3 h-3"/>
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-brand-text">Lucra Pro</p>
-            <p className="text-xs text-brand-light">Just now</p>
+
+          {/* Post Text */}
+          {postText && (
+            <div className="text-brand-light text-sm whitespace-pre-wrap mb-3">
+              {postText.split('\n').map((line, i) => (
+                <p key={i}>{line || '\u00A0'}</p> // Render empty lines for spacing
+              ))}
+            </div>
+          )}
+
+          {/* Image */}
+          {image ? (
+            <div className="aspect-video bg-brand-secondary rounded-md overflow-hidden">
+              <img src={image} alt="Post preview" className="w-full h-full object-cover" />
+            </div>
+          ) : (
+             <div className="aspect-video bg-brand-secondary rounded-md flex items-center justify-center text-brand-light/50">
+                <p>Image will appear here</p>
+             </div>
+          )}
+
+          {/* Footer/Actions */}
+          <div className="mt-3 pt-2 border-t border-brand-accent flex justify-around text-sm font-semibold text-brand-light">
+             <button className="flex-1 p-2 rounded-md hover:bg-brand-secondary">Like</button>
+             <button className="flex-1 p-2 rounded-md hover:bg-brand-secondary">Comment</button>
+             <button className="flex-1 p-2 rounded-md hover:bg-brand-secondary">Share</button>
           </div>
         </div>
-        <p className="text-brand-text whitespace-pre-wrap text-sm mb-4">
-          {text || "Your generated text will appear here..."}
-        </p>
-        {image && (
-          <div className="w-full aspect-video bg-brand-secondary rounded-md overflow-hidden">
-            <img src={image} alt="Post preview" className="w-full h-full object-cover" />
-          </div>
-        )}
-        {!image && (
-             <div className="w-full aspect-video bg-brand-secondary rounded-md flex items-center justify-center text-brand-light">
-                Your image will appear here
-             </div>
-        )}
       </div>
     </div>
   );

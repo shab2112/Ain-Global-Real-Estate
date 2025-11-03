@@ -1,206 +1,65 @@
-export const imagePromptText = `You are an expert real estate marketing content designer.
+import { PostType } from '../types';
+
+const imagePromptText = `You are an expert real estate marketing content designer for Lockwood & Carter.
 Create a promotional image for a real estate campaign, optimized for digital ads or social media posts.
 
 🎯 Objective:
-
-Generate a visually captivating ad image that highlights either:
-
-A project/development (multiple units or towers), or
-
-A specific property/unit (individual apartment, villa, townhouse).
+Generate a visually captivating ad image that highlights either a project/development or a specific property/unit.
 
 🧠 Input Sources:
-
-Factsheet → developer name, project name, handover date, payment plan, amenities, project location
-
-Brochure → property types, floor plans, elevations
-
-Image Input (if provided) → project render or unit photo (should be incorporated into the composition)
+- Factsheet: developer name, project name, handover date, payment plan, amenities, location.
+- Brochure: property types, floor plans.
+- Image Input: project render or unit photo (should be incorporated into the composition).
 
 🧩 Visual Composition:
-
-Use premium real estate aesthetic: elegant lighting, realistic architecture, professional layout.
-
-Display:
-
-Developer name & logo
-
-Project name & location
-
-Key selling points (3–4 bullets)
-
-Property types available (1–4 BR apartments / villas)
-
-Handover date
-
-Payment plan summary (e.g., 70/30, post-handover options)
-
-If off-plan: include Launch Date and “EOI Now Open” badge.
-
-For unit-specific ads, replace general info with:
-
-Floor plan snapshot
-
-Unit size (sq.ft or sq.m)
-
-Key features (balcony, sea view, open kitchen, etc.)
-
-“View Floor Plan” or “Book a Viewing” button visual.
-
-Always include a Call-to-Action button (CTA) with one of:
-
-“Register Interest →”
-
-“Visit Landing Page →”
-
-“Book Viewing →”
-
-Add brand color overlays and a soft gradient for text readability.
+- Use a premium real estate aesthetic: elegant lighting, realistic architecture, professional layout.
+- Display: Developer name, project name, 3-4 key selling points, property types, handover date, payment plan summary.
+- If off-plan, include "EOI Now Open" badge.
+- Always include a Call-to-Action (CTA) button: "Register Interest →", "Visit Landing Page →", or "Book Viewing →".
+- Add brand color overlays and a soft gradient for text readability.
 
 🏗️ Output Requirements:
-
-Format: Landscape (16:9) for digital ads OR Square (1:1) for social media.
-
-Professional, high-resolution composition.
-
-Text hierarchy: large project name → medium tagline → smaller details → clear CTA button.
-
-Optional QR code area linking to the project’s landing page.
+- Format: Square (1:1) for social media.
+- Professional, high-resolution composition.
+- Clear text hierarchy and a prominent CTA.
 
 💡 Example Concept:
+“Luxury Waterfront Living – Marina Vista by Emaar. Handover Q4 2025 | 80/20 Payment Plan. Register Your EOI Now →”
 
-“Luxury Waterfront Living – Marina Vista by Emaar
-Handover Q4 2025 | 80/20 Payment Plan
-Register Your EOI Now →”
+Now generate the ad image composition, visually integrating all major details. If an image input is provided, make it the central visual focus.`;
 
-Now generate the ad image composition, visually integrating all major details.
-If an image input is provided, make it the central visual focus.`;
-
-export const videoPromptText = `You are a professional real estate video director creating a high-conversion marketing video for a real estate project or unit.
+const videoPromptText = `You are a professional real estate video director for Lockwood & Carter creating a high-conversion marketing video.
 The video should merge brand visuals with property walkthroughs, emphasizing lifestyle, trust, and urgency.
 
 🎯 Objective:
-
-Produce a 30–60 second promotional video that visually communicates:
-
-Developer reputation
-
-Project features or unit details
-
-Payment and handover info
-
-Call-to-action with landing page link
+Produce a 30–60 second promotional video that visually communicates developer reputation, project features, payment info, and a strong call-to-action.
 
 🧠 Input Sources:
-
-Factsheet: project name, developer, handover, payment plan, amenities, property types.
-
-Brochure: floor plan, design, and unit-specific elevation.
-
-Video Inputs:
-
-Developer’s video content (renders, promotional visuals)
-
-Property advisor’s walkthrough video (authentic on-site or model walkthrough)
-
-Combine these inputs into a cohesive, professional sequence.
+- Factsheet: project name, developer, handover, payment plan, amenities.
+- Brochure: floor plan, design.
+- Video Inputs: Developer’s promotional visuals and a property advisor’s walkthrough video.
 
 🎬 Video Structure & Scene Guide:
-
-Scene 1 – Intro (3–5 sec)
-
-Smooth cinematic intro with project logo and tagline
-
-Background: hero shot of the tower/community
-
-Overlay text:
-
-Project name
-
-Location
-
-Developer logo
-
-Scene 2 – Developer Highlights (5–8 sec)
-
-Use developer’s branded footage.
-
-Display project overview, architectural renders, or location aerials.
-
-Overlay text:
-
-“Luxury 1–4 BR Apartments” or “Waterfront Villas by [Developer]”
-
-“Handover [Quarter/Year]”
-
-Scene 3 – Amenities & Lifestyle (8–10 sec)
-
-Footage: pool, gym, community view, kids area.
-
-Overlay text: “Resort-Style Amenities” / “Smart Home Ready” / “Vibrant Community.”
-
-Scene 4 – Property Walkthrough (10–15 sec)
-
-Merge developer footage with advisor walkthrough video seamlessly.
-
-Transition to advisor voiceover or captions describing unit highlights.
-
-Overlay: “Spacious 2BR – 1,350 sq.ft | Sea View | Open Kitchen.”
-
-Scene 5 – Floor Plan & Payment Info (5–8 sec)
-
-Show floor plan snapshot or animated layout.
-
-Overlay text:
-
-“Starting from AED [price]”
-
-“Payment Plan: 70/30 | Post-Handover Options.”
-
-Scene 6 – Launch / EOI Section (if Off-Plan)
-
-Text:
-
-“Launches [Date]”
-
-“EOI Now Open – Reserve Your Spot.”
-
-Animation of the landing page preview or QR code.
-
-Scene 7 – CTA Outro (5 sec)
-
-Strong CTA overlay:
-
-“Register Your Interest → [Landing Page URL]”
-
-“Book a Viewing Today →”
-
-Include agency logo + developer logo side by side.
-
-Soft fade-out with tagline music.
+1.  **Intro (3–5s):** Cinematic intro with project logo, name, location, and developer logo.
+2.  **Developer Highlights (5–8s):** Use developer's branded footage. Overlay text with property types and handover date.
+3.  **Amenities & Lifestyle (8–10s):** Footage of pool, gym, community. Overlay text with key amenities.
+4.  **Property Walkthrough (10–15s):** Seamlessly merge developer footage with advisor walkthrough video. Overlay unit details (e.g., "Spacious 2BR – 1,350 sq.ft | Sea View").
+5.  **Floor Plan & Payment (5–8s):** Show floor plan snapshot. Overlay starting price and payment plan.
+6.  **CTA Outro (5s):** Strong CTA overlay: "Register Your Interest → [Landing Page URL]" or "Book a Viewing Today →". Include Lockwood & Carter agency logo.
 
 ⚙️ Output Requirements:
-
-Duration: 30–60 seconds
-
-Aspect ratio: 16:9 (YouTube/landing) or 9:16 (Instagram/TikTok ads)
-
-Combine both developer visuals + advisor walkthrough fluidly
-
-Maintain premium tone, real estate branding, and modern transitions
-
-Add smooth background music, clean text overlays, and clear CTA ending.
+- Duration: 30–60 seconds.
+- Aspect ratio: 9:16 (for social media).
+- Combine visuals fluidly, maintain a premium tone, and use modern transitions.
+- Add background music, clean text overlays, and a clear CTA.
 
 💡 Example Summary Script:
+“Introducing Marina Vista by Emaar — where luxury meets the waterfront. Choose from 1–4 BR apartments with flexible 80/20 payment plans. Handover Q4 2025. Register your EOI now at [landing page link].”
 
-“Introducing Marina Vista by Emaar — where luxury meets the waterfront.
-Choose from 1–4 BR apartments with flexible 80/20 payment plans.
-Handover Q4 2025.
-Register your EOI now at [landing page link].”
-
-Now generate the video concept, combining visuals, text overlays, and CTA flow according to the structure above.`;
+Now generate the video, combining visuals, text overlays, and CTA flow according to the structure above.`;
 
 export const masterPrompts = {
-    Image: imagePromptText,
-    Video: videoPromptText,
+    [PostType.Image]: imagePromptText,
+    [PostType.Video]: videoPromptText,
+    [PostType.Text]: 'Generate a concise text-only post.' // Placeholder
 };

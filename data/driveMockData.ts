@@ -14,6 +14,7 @@ export const driveData: DriveProject[] = [
   {
     id: 'proj-001',
     name: 'Masaar',
+    developer: 'Arada',
     assets: [
       { id: 'asset-1a', name: 'Masaar Forest Community.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1974&auto=format&fit=crop' },
       { id: 'asset-1b', name: 'Masaar Modern Villa Exterior.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto=format&fit=crop' },
@@ -40,6 +41,7 @@ export const driveData: DriveProject[] = [
   {
     id: 'proj-002',
     name: 'Dubai Hills Estate',
+    developer: 'Emaar Properties',
     assets: [
       { id: 'asset-2a', name: 'Dubai Hills Golf Course View.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1593955872339-16a125974033?q=80&w=2070&auto=format&fit=crop' },
       { id: 'asset-2b', name: 'Dubai Hills Mansion Exterior.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1542324218-b2a549a174d8?q=80&w=2070&auto=format&fit=crop' },
@@ -66,6 +68,7 @@ export const driveData: DriveProject[] = [
   {
     id: 'proj-003',
     name: 'DAMAC Lagoons',
+    developer: 'DAMAC Properties',
     assets: [
         { id: 'asset-3a', name: 'Lagoon Crystal Waters.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1526786221463-74a322488af7?q=80&w=2070&auto=format&fit=crop' },
         { id: 'asset-3b', name: 'Santorini Style Villas.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1534293992196-9f21f64b6389?q=80&w=2070&auto=format&fit=crop' },

@@ -1,53 +1,80 @@
 import React, { useState } from 'react';
+import { User, UserRole } from './types';
+import { mockUsers } from './data/mockData';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import Dashboard from './components/Dashboard';
 import ContentStudio from './components/ContentStudio';
 import MarketIntelligence from './components/MarketIntelligence';
 import Clients from './components/Clients';
+import Contracts from './components/Contracts';
+import MasterPrompts from './components/MasterPrompts';
 import LandingPage from './components/LandingPage';
-import Dashboard from './components/Dashboard';
-import { View, User } from './types';
-import { mockUsers } from './data/mockData';
+import ClientDashboard from './components/ClientDashboard';
+
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeView, setActiveView] = useState<View>(View.Dashboard);
-  const [currentUser, setCurrentUser] = useState<User>(mockUsers.find(u => u.role === 'Owner')!);
+  const [currentUser, setCurrentUser] = useState<User>(mockUsers[2]); // Default to Property Advisor
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const renderContent = () => {
-    switch (activeView) {
-      case View.Dashboard:
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+  
+  const handleSetCurrentUser = (user: User) => {
+    setCurrentUser(user);
+    if (user.role === UserRole.Client) {
+        // Clients have a dedicated view, no sidebar navigation
+    } else {
+        // Default to dashboard for staff
+        setCurrentView('dashboard');
+    }
+  }
+
+  const renderCurrentView = () => {
+    switch (currentView) {
+      case 'dashboard':
         return <Dashboard currentUser={currentUser} />;
-      case View.ContentStudio:
+      case 'content-studio':
         return <ContentStudio currentUser={currentUser} />;
-      case View.MarketIntelligence:
+      case 'market-intelligence':
         return <MarketIntelligence />;
-      case View.Clients:
+      case 'clients':
         return <Clients currentUser={currentUser} />;
+      case 'contracts':
+        if (currentUser.role !== UserRole.Owner && currentUser.role !== UserRole.Admin) {
+          // Redirect non-privileged users to the dashboard
+          return <Dashboard currentUser={currentUser} />;
+        }
+        return <Contracts currentUser={currentUser} />;
+      case 'master-prompts':
+        return <MasterPrompts />;
       default:
         return <Dashboard currentUser={currentUser} />;
     }
   };
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
-
-  if (!isAuthenticated) {
+  if (!isLoggedIn) {
     return <LandingPage onLogin={handleLogin} />;
+  }
+  
+  if (currentUser.role === UserRole.Client) {
+      return (
+        <div className="h-screen w-screen bg-brand-primary text-brand-text flex flex-col">
+            <Header currentUser={currentUser} setCurrentUser={handleSetCurrentUser} allUsers={mockUsers} />
+            <ClientDashboard currentUser={currentUser} />
+        </div>
+      );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header 
-        currentUser={currentUser} 
-        setCurrentUser={setCurrentUser}
-        allUsers={mockUsers} 
-      />
+    <div className="h-screen w-screen bg-brand-primary text-brand-text flex flex-col overflow-hidden">
+      <Header currentUser={currentUser} setCurrentUser={handleSetCurrentUser} allUsers={mockUsers} />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar activeView={activeView} onNavigate={setActiveView} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-          {renderContent()}
+        <Sidebar currentView={currentView} setCurrentView={setCurrentView} currentUser={currentUser} />
+        <main className="flex-1 p-6 overflow-y-auto">
+          {renderCurrentView()}
         </main>
       </div>
     </div>

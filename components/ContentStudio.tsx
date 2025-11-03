@@ -14,6 +14,9 @@ const ContentStudio: React.FC<ContentStudioProps> = ({ currentUser }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [viewMode, setViewMode] = useState<'FourWeek' | 'Monthly'>('FourWeek');
+  const [currentDate, setCurrentDate] = useState(new Date());
+
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -31,6 +34,15 @@ const ContentStudio: React.FC<ContentStudioProps> = ({ currentUser }) => {
     };
     fetchProjects();
   }, []);
+  
+  const handlePrevMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
 
   return (
     <div className="h-full flex flex-col gap-4">
@@ -51,7 +63,7 @@ const ContentStudio: React.FC<ContentStudioProps> = ({ currentUser }) => {
             {isLoading ? (
               <option>Loading Projects...</option>
             ) : (
-              projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)
+              projects.map(p => <option key={p.id} value={p.id}>{p.developer.toUpperCase()} - {p.name}</option>)
             )}
           </select>
         </div>
@@ -59,12 +71,40 @@ const ContentStudio: React.FC<ContentStudioProps> = ({ currentUser }) => {
       
       {error && <div className="bg-red-500/20 text-red-300 p-3 rounded-md">{error}</div>}
 
-      <div className="flex-1 bg-brand-secondary p-4 rounded-xl shadow-lg overflow-y-auto">
+      <div className="flex-1 bg-brand-secondary p-4 rounded-xl shadow-lg overflow-y-auto flex flex-col gap-4">
+         {/* Planner Controls Header */}
+         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-2">
+            <div className="flex items-center gap-2 bg-brand-primary p-1 rounded-lg w-fit">
+                <button
+                    onClick={() => setViewMode('FourWeek')}
+                    className={`px-3 py-1 rounded-md text-sm font-semibold transition-colors ${viewMode === 'FourWeek' ? 'bg-brand-gold text-brand-primary' : 'text-brand-light hover:text-brand-text'}`}
+                >
+                    4-Week View
+                </button>
+                <button
+                    onClick={() => setViewMode('Monthly')}
+                    className={`px-3 py-1 rounded-md text-sm font-semibold transition-colors ${viewMode === 'Monthly' ? 'bg-brand-gold text-brand-primary' : 'text-brand-light hover:text-brand-text'}`}
+                >
+                    Monthly View
+                </button>
+            </div>
+            {viewMode === 'Monthly' && (
+                <div className="flex items-center gap-4">
+                    <button onClick={handlePrevMonth} className="p-2 rounded-md hover:bg-brand-primary text-brand-light">&lt; Prev</button>
+                    <span className="font-bold text-lg text-brand-text w-36 text-center">
+                        {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button onClick={handleNextMonth} className="p-2 rounded-md hover:bg-brand-primary text-brand-light">Next &gt;</button>
+                </div>
+            )}
+        </div>
         {selectedProjectId ? (
           <ContentPlanner 
             key={selectedProjectId} 
             projectId={selectedProjectId} 
-            currentUser={currentUser} 
+            currentUser={currentUser}
+            viewMode={viewMode}
+            currentDate={currentDate}
           />
         ) : (
           <div className="flex items-center justify-center h-full text-brand-light">

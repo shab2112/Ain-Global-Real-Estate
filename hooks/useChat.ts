@@ -1,6 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { ChatSession, ChatMessage, User, ChatMode, UserRole } from '../types';
+// FIX: The geminiService file is no longer empty, so this import will work.
 import { generateClientChatResponse, generateStaffChatResponse } from '../services/geminiService';
 
 const useChat = (currentUser: User, mode: ChatMode) => {
@@ -61,6 +62,7 @@ const useChat = (currentUser: User, mode: ChatMode) => {
 
         setIsLoading(true);
         setError(null);
+        let isWaitingForLocation = false;
 
         try {
             const generateFunction = mode === ChatMode.Client ? generateClientChatResponse : generateStaffChatResponse;
@@ -71,6 +73,7 @@ const useChat = (currentUser: User, mode: ChatMode) => {
                     prev.map(s => s.id === activeSessionId ? { ...s, messages: [...historyWithUserMessage, aiResponse] } : s)
                 );
                 setIsLoading(false);
+                isWaitingForLocation = true;
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const locationMessage = `(System Info: User location is Lat ${position.coords.latitude}, Lon ${position.coords.longitude}). Based on my location, please continue. Also, please ask if this location is significant for the search if I haven't specified another location.`;
@@ -103,7 +106,9 @@ const useChat = (currentUser: User, mode: ChatMode) => {
                 prev.map(s => s.id === activeSessionId ? { ...s, messages: [...historyWithUserMessage, errorMessage] } : s)
             );
         } finally {
-            setIsLoading(false);
+            if (!isWaitingForLocation) {
+                setIsLoading(false);
+            }
         }
     }, [activeSessionId, currentSessions, mode]);
 

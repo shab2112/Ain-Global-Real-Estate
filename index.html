@@ -2,38 +2,52 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lucra Pro AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Lucra</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              'brand-primary': '#0D1B2A',
-              'brand-secondary': '#1B263B',
-              'brand-accent': '#415A77',
-              'brand-light': '#778DA9',
-              'brand-text': '#E0E1DD',
-              'brand-gold': '#D4AF37'
+              'brand-primary': '#0D1117',
+              'brand-secondary': '#161B22',
+              'brand-accent': '#30363D',
+              'brand-gold': '#D4AF37',
+              'brand-text': '#E6EDF3',
+              'brand-light': '#8B949E',
+            },
+            fontFamily: {
+              sans: ['Montserrat', 'sans-serif'],
             },
           },
         },
       }
     </script>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
-  }
-}
-</script>
-</head>
-  <body class="bg-brand-primary text-brand-text">
+
+    <script type="importmap">
+      {
+        "imports": {
+          "react/": "https://aistudiocdn.com/react@^19.2.0/",
+          "react": "https://aistudiocdn.com/react@^19.2.0",
+          "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+          "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0"
+        }
+      }
+    </script>
+    <style>
+      body {
+        margin: 0;
+        font-family: 'Montserrat', sans-serif;
+        background-color: #0D1117; /* Matches brand-primary */
+      }
+    </style>
+  </head>
+  <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

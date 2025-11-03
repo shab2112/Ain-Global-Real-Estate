@@ -1,147 +1,104 @@
-import { User, Client, UserRole, ContentPost } from '../types';
-import { mockUsers, mockClients } from '../data/mockData';
+import { Client, ContentPost, Contract, PostStatus } from '../types';
+import { mockClients } from '../data/mockData';
 import { mockScheduledPosts } from '../data/driveMockData';
+import { mockContracts } from '../data/contractsMockData';
+import { driveData } from '../data/driveMockData';
 
-// =================================================================
-// NOTE: This is a placeholder API service.
-// In a real application, these functions would make network requests
-// (e.g., using `fetch` or `axios`) to a backend server.
-// The backend server would then connect to the PostgreSQL database.
-// =================================================================
 
-// Simulate network delay
+// In-memory "database"
+let clientsDB: Client[] = JSON.parse(JSON.stringify(mockClients));
+let postsDB: ContentPost[] = JSON.parse(JSON.stringify(mockScheduledPosts));
+let contractsDB: Contract[] = JSON.parse(JSON.stringify(mockContracts));
+
 const apiDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-let inMemoryClients: Client[] = [...mockClients];
-let inMemoryPosts: ContentPost[] = [...mockScheduledPosts];
-
-/**
- * Fetches all users. In a real app, this would be an API call.
- */
-export const getUsers = async (): Promise<User[]> => {
-  await apiDelay(300);
-  console.log("API_SERVICE: Fetched all users.");
-  return mockUsers;
-};
-
-/**
- * Fetches all clients. In a real app, this would be GET /api/clients.
- */
+// === CLIENTS API ===
 export const getClients = async (): Promise<Client[]> => {
-  await apiDelay(500);
-  console.log("API_SERVICE: Fetched all clients.");
-  // Return a copy to prevent direct mutation of the "database"
-  return [...inMemoryClients];
+    await apiDelay(300);
+    console.log("SIMULATING: Fetched clients");
+    return [...clientsDB];
 };
 
-/**
- * Creates a new client. In a real app, this would be POST /api/clients.
- * @param clientData - The data for the new client.
- * @returns The newly created client, including an ID from the backend.
- */
 export const createClient = async (clientData: Omit<Client, 'id'>): Promise<Client> => {
-    await apiDelay(800);
+    await apiDelay(500);
     const newClient: Client = {
-        id: `client_${Date.now()}`,
+        id: `client-${Date.now()}`,
         ...clientData
     };
-    inMemoryClients = [newClient, ...inMemoryClients];
-    console.log("API_SERVICE: Created new client.", newClient);
+    clientsDB.unshift(newClient);
+    console.log("SIMULATING: Created new client", newClient);
     return newClient;
 };
 
-
-/**
- * SIMULATES fetching contextual data from a database for the RAG system.
- * In a real app, this would query your PostgreSQL DB.
- */
-export const getKnownDevelopersAndProjects = async (): Promise<string> => {
-    await apiDelay(100); // Simulate DB query latency
-    console.log("API_SERVICE: Fetched contextual data for RAG system.");
-    return `
-      Key Developers: Emaar Properties, DAMAC Properties, Nakheel, Sobha Realty, Omniyat.
-      Key Projects: Dubai Hills Estate (Emaar), DAMAC Lagoons (DAMAC), Palm Jumeirah (Nakheel), Sobha Hartland (Sobha), The Opus (Omniyat).
-    `;
-};
-
-/**
- * SIMULATES fetching campaign metrics for the RAG system.
- */
-export const getCampaignMetrics = async (): Promise<any> => {
-    await apiDelay(150);
-    console.log("API_SERVICE: Fetched campaign metrics for RAG.");
-    return {
-        lastMonth: {
-            totalCampaigns: 5,
-            totalSpend: "15,000 USD",
-            leadsGenerated: 120,
-            costPerLead: "125 USD",
-            topPerformingCampaign: "Masaar Launch - Facebook",
-        },
-        thisMonth: {
-            activeCampaigns: 3,
-            currentSpend: "8,000 USD",
-            leadsGenerated: 65,
-        }
-    };
-}
-
-/**
- * SIMULATES fetching scheduled content for the RAG system.
- */
-export const getScheduledContent = async (): Promise<any> => {
-    await apiDelay(150);
-    console.log("API_SERVICE: Fetched scheduled content for RAG.");
-    return [
-        { date: "Monday", topic: "Video tour of Dubai Hills penthouse", platform: "YouTube, Instagram" },
-        { date: "Wednesday", topic: "Blog post on 'Top 5 Family Communities in Dubai'", platform: "LinkedIn, Website" },
-        { date: "Friday", topic: "Market update infographic for Q3", platform: "Facebook, LinkedIn" },
-    ];
-};
-
-
-// === CONTENT STUDIO API ===
-
-/**
- * Fetches all scheduled content posts.
- */
+// === CONTENT API ===
 export const getScheduledPosts = async (): Promise<ContentPost[]> => {
-    await apiDelay(500);
-    console.log("API_SERVICE: Fetched all scheduled posts.");
-    return [...inMemoryPosts];
+    await apiDelay(300);
+    console.log("SIMULATING: Fetched scheduled posts");
+    return [...postsDB];
 };
 
-/**
- * Creates a new content post.
- */
 export const createContentPost = async (postData: Omit<ContentPost, 'id'>): Promise<ContentPost> => {
-    await apiDelay(400);
+    await apiDelay(500);
     const newPost: ContentPost = {
-        id: `post_${Date.now()}`,
-        ...postData
+        id: `post-${Date.now()}`,
+        ...postData,
     };
-    // FIX: Replaced array mutation (.push) with an immutable update to ensure React change detection works reliably.
-    inMemoryPosts = [newPost, ...inMemoryPosts];
-    console.log("API_SERVICE: Created new content post.", newPost);
+    postsDB.push(newPost);
+    console.log("SIMULATING: Created new content post", newPost);
     return newPost;
 };
 
-/**
- * Updates an existing content post.
- */
 export const updateContentPost = async (postId: string, updates: Partial<ContentPost>): Promise<ContentPost> => {
-    await apiDelay(300);
-    let updatedPost: ContentPost | undefined;
-    inMemoryPosts = inMemoryPosts.map(post => {
-        if (post.id === postId) {
-            updatedPost = { ...post, ...updates };
-            return updatedPost;
-        }
-        return post;
-    });
-    if (!updatedPost) {
-        throw new Error("Post not found");
-    }
-    console.log("API_SERVICE: Updated content post.", updatedPost);
-    return updatedPost;
+    await apiDelay(400);
+    const postIndex = postsDB.findIndex(p => p.id === postId);
+    if (postIndex === -1) throw new Error("Post not found");
+    postsDB[postIndex] = { ...postsDB[postIndex], ...updates };
+    console.log(`SIMULATING: Updated post ${postId}`, postsDB[postIndex]);
+    return postsDB[postIndex];
+};
+
+
+// === CONTRACTS API ===
+export const getContracts = async (): Promise<Contract[]> => {
+    await apiDelay(400);
+    console.log("SIMULATING: Fetched contracts");
+    return [...contractsDB];
+};
+
+export const createContract = async (contractData: Omit<Contract, 'id'>): Promise<Contract> => {
+    await apiDelay(600);
+    const newContract: Contract = {
+        id: `contract-${Date.now()}`,
+        ...contractData,
+    };
+    contractsDB.unshift(newContract);
+    console.log("SIMULATING: Created new contract", newContract);
+    return newContract;
+};
+
+// === STAFF CHAT TOOLS API ===
+export const getKnownDevelopersAndProjects = async () => {
+    await apiDelay(200);
+    return driveData.map(p => ({ developer: p.developer, project: p.name }));
+};
+
+export const getCampaignMetrics = async () => {
+    await apiDelay(200);
+    return {
+        totalSpend: 45000,
+        totalLeads: 850,
+        costPerLead: (45000 / 850).toFixed(2),
+        period: "Last 30 days",
+    };
+};
+
+export const getScheduledContent = async () => {
+    await apiDelay(200);
+    const upcoming = postsDB.filter(p => p.status !== PostStatus.Published && new Date(p.scheduledDate) > new Date());
+    return upcoming.map(p => ({
+        date: new Date(p.scheduledDate).toLocaleDateString(),
+        platform: p.platform,
+        project: driveData.find(proj => proj.id === p.projectId)?.name || 'Unknown',
+        status: p.status,
+    }));
 };

@@ -9,6 +9,8 @@ import { VideoIcon } from './icons/VideoIcon';
 interface ContentPlannerProps {
   projectId: string;
   currentUser: User;
+  viewMode: 'FourWeek' | 'Monthly';
+  currentDate: Date;
 }
 
 const getStatusStyles = (status: PostStatus, isOverdue: boolean) => {
@@ -27,7 +29,7 @@ const getStatusStyles = (status: PostStatus, isOverdue: boolean) => {
     }
 };
 
-const ContentPlanner: React.FC<ContentPlannerProps> = ({ projectId, currentUser }) => {
+const ContentPlanner: React.FC<ContentPlannerProps> = ({ projectId, currentUser, viewMode, currentDate }) => {
   const [project, setProject] = useState<DriveProject | null>(null);
   const [posts, setPosts] = useState<ContentPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,16 +98,47 @@ const ContentPlanner: React.FC<ContentPlannerProps> = ({ projectId, currentUser 
   };
 
   const calendarDays = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const days = [];
-    for (let i = 0; i < 28; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      days.push(date);
+    if (viewMode === 'FourWeek') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return Array.from({ length: 28 }, (_, i) => {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            return { date, isCurrentMonth: true };
+        });
+    } else { // Monthly view
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+
+        const days = [];
+        
+        // Days from previous month to fill the grid
+        const startDayOfWeek = firstDayOfMonth.getDay(); // 0=Sun
+        for (let i = 0; i < startDayOfWeek; i++) {
+            const date = new Date(firstDayOfMonth);
+            date.setDate(date.getDate() - (startDayOfWeek - i));
+            days.push({ date, isCurrentMonth: false });
+        }
+
+        // Days of current month
+        for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
+            days.push({ date: new Date(year, month, i), isCurrentMonth: true });
+        }
+
+        // Days from next month to fill the grid
+        const endDayOfWeek = lastDayOfMonth.getDay();
+        const remainingDays = (7 - (days.length % 7)) % 7;
+        for (let i = 1; i <= remainingDays; i++) {
+            const date = new Date(lastDayOfMonth);
+            date.setDate(date.getDate() + i);
+            days.push({ date, isCurrentMonth: false });
+        }
+        return days;
     }
-    return days;
-  }, []);
+  }, [viewMode, currentDate]);
 
   if (isLoading) {
     return <div className="text-center p-8">Loading Planner...</div>;
@@ -118,17 +151,17 @@ const ContentPlanner: React.FC<ContentPlannerProps> = ({ projectId, currentUser 
 
   return (
     <>
-      <div className="grid grid-cols-7 gap-2">
+      <div className={`grid gap-2 ${viewMode === 'FourWeek' ? 'grid-cols-4' : 'grid-cols-7'}`}>
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center font-bold text-brand-light text-sm">{day}</div>
+          <div key={day} className="text-center font-bold text-brand-light text-sm mb-2">{day}</div>
         ))}
-        {calendarDays.map((day) => {
-          const dayPosts = posts.filter(p => new Date(p.scheduledDate).toDateString() === day.toDateString());
+        {calendarDays.map(({ date, isCurrentMonth }) => {
+          const dayPosts = posts.filter(p => new Date(p.scheduledDate).toDateString() === date.toDateString());
           return (
-            <div key={day.toISOString()} className="bg-brand-primary h-40 rounded-lg p-2 flex flex-col gap-1 overflow-y-auto">
-              <div className="font-semibold text-xs">{day.getDate()}</div>
+            <div key={date.toISOString()} className={`bg-brand-primary h-40 rounded-lg p-2 flex flex-col gap-1 overflow-y-auto ${!isCurrentMonth ? 'opacity-40' : ''}`}>
+              <div className={`font-semibold text-xs ${isCurrentMonth ? 'text-brand-text' : 'text-brand-light/70'}`}>{date.getDate()}</div>
               {dayPosts.map(post => {
-                 const isOverdue = post.status === PostStatus.PendingApproval && (new Date(post.scheduledDate).getTime() - Date.now()) < 24 * 60 * 60 * 1000 && (new Date(post.scheduledDate).getTime() > Date.now());
+                 const isOverdue = post.status === PostStatus.PendingApproval && (new Date(post.scheduledDate).getTime() - Date.now()) < 0;
                  const PostIcon = post.postType === 'Video' ? VideoIcon : ImageIcon;
                  return (
                     <div key={post.id} className={`p-1.5 rounded-md text-xs cursor-pointer ring-1 ${getStatusStyles(post.status, isOverdue)}`}>
@@ -145,7 +178,9 @@ const ContentPlanner: React.FC<ContentPlannerProps> = ({ projectId, currentUser 
                     </div>
                  );
               })}
-              <button onClick={() => handleOpenModalForNew(day)} className="mt-auto text-center text-xs text-brand-light hover:text-brand-text w-full">+ Schedule</button>
+              {isCurrentMonth && (
+                <button onClick={() => handleOpenModalForNew(date)} className="mt-auto text-center text-xs text-brand-light hover:text-brand-text w-full">+ Schedule</button>
+              )}
             </div>
           );
         })}

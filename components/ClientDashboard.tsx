@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { User, ChatSession, ChatMessage } from '../types';
+// FIX: The geminiService file is no longer empty, so this import will work.
 import { generateClientChatResponse } from '../services/geminiService';
 import ChatHistorySidebar from './ChatHistorySidebar';
 import ChatWindow from './ChatWindow';

@@ -16,7 +16,7 @@ const apiDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
 export const getDriveProjects = async (): Promise<Omit<DriveProject, 'assets'>[]> => {
   await apiDelay(400); // Simulate network latency
   console.log("SIMULATING: Fetched all project folders from Google Drive.");
-  return driveData.map(p => ({ id: p.id, name: p.name }));
+  return driveData.map(p => ({ id: p.id, name: p.name, developer: p.developer }));
 };
 
 /**

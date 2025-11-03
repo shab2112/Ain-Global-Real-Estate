@@ -1,7 +1,5 @@
 {
-  "name": "Lucra Pro AI",
-  "description": "An intelligent real estate marketing hub that leverages Generative AI to automate content creation, personalize client communication, and enhance multimedia assets for maximum impact.",
-  "requestFramePermissions": [
-    "geolocation"
-  ]
+  "name": "Lucra",
+  "description": "The all-in-one AI-powered operating system for elite real estate agencies.",
+  "requestFramePermissions": []
 }

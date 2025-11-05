@@ -75,8 +75,8 @@ export interface ContentPost {
 export interface MarketReportResult {
   report: string;
   sources: any[];
-  tokenCount: number;
-  cost: number;
+  tokenCount?: number;
+  cost?: number;
 }
 
 export interface ChatMessage {
@@ -157,4 +157,11 @@ export interface VaultDocument {
     type: 'Passport' | 'KYC' | 'SPA' | 'Title Deed' | 'Other';
     uploadDate: string; // ISO string
     url: string;
+}
+
+declare global {
+    interface Window {
+      jspdf: any;
+      html2canvas: any;
+    }
 }

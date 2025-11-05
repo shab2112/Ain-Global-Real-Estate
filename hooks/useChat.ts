@@ -4,11 +4,21 @@ import { ChatSession, ChatMessage, User, ChatMode, UserRole } from '../types';
 // FIX: The geminiService file is no longer empty, so this import will work.
 import { generateClientChatResponse, generateStaffChatResponse } from '../services/geminiService';
 
+const CHAT_SESSIONS_STORAGE_KEY = 'lucra-chat-sessions';
+
 const useChat = (currentUser: User, mode: ChatMode) => {
-    const [sessions, setSessions] = useState<{ [key in ChatMode]: ChatSession[] }>({
-        [ChatMode.Staff]: [],
-        [ChatMode.Client]: [],
+    const [sessions, setSessions] = useState<{ [key in ChatMode]: ChatSession[] }>(() => {
+        try {
+            const storedSessions = localStorage.getItem(CHAT_SESSIONS_STORAGE_KEY);
+            if (storedSessions) {
+                return JSON.parse(storedSessions);
+            }
+        } catch (error) {
+            console.error("Could not load chat sessions from localStorage", error);
+        }
+        return { [ChatMode.Staff]: [], [ChatMode.Client]: [] };
     });
+
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -20,6 +30,16 @@ const useChat = (currentUser: User, mode: ChatMode) => {
             [mode]: typeof newSessions === 'function' ? newSessions(prev[mode]) : newSessions
         }));
     };
+
+    // Save sessions to localStorage whenever they change
+    useEffect(() => {
+        try {
+            localStorage.setItem(CHAT_SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
+        } catch (error) {
+            console.error("Could not save chat sessions to localStorage", error);
+        }
+    }, [sessions]);
+
 
     // Start a new session when mode changes if none exist for that mode
     useEffect(() => {

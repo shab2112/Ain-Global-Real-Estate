@@ -1,12 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 // FIX: The geminiService file is no longer empty, so this import will work.
+// FIX: MarketReportResult is defined in types.ts and should be imported from there.
 import { generateMarketReport } from '../services/geminiService';
 import { MarketReportResult } from '../types';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { ChartBarIcon } from './icons/ChartBarIcon';
 import { TokenIcon } from './icons/TokenIcon';
 import { CashIcon } from './icons/CashIcon';
+import { DownloadIcon } from './icons/DownloadIcon';
 import InfographicReport from './InfographicReport';
+import PrintableReport from './PrintableReport';
+
 
 const CITIES = [
   'Abu Dhabi', 'Bangalore', 'Chennai', 'Delhi', 'Dubai', 'Hyderabad', 'London', 
@@ -31,6 +35,10 @@ const MarketIntelligence: React.FC = () => {
   const [result, setResult] = useState<MarketReportResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showPrintable, setShowPrintable] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
 
   const handleComparisonCityChange = (city: string) => {
     setComparisonCities(prev =>
@@ -69,142 +77,219 @@ const MarketIntelligence: React.FC = () => {
     }
   }, [primaryCity, comparisonCities, selectedMetrics]);
 
+  const handleGeneratePdf = () => {
+    if (!result) return;
+    setIsGeneratingPdf(true);
+    setShowPrintable(true);
+  };
+  
+  useEffect(() => {
+    if (showPrintable && printRef.current) {
+      const { jsPDF } = window.jspdf;
+      const element = printRef.current;
+
+      window.html2canvas(element, { 
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null
+      }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = imgWidth / pdfWidth;
+        const scaledHeight = imgHeight / ratio;
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        
+        let position = 0;
+        let heightLeft = scaledHeight;
+
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft > 0) {
+            position -= pageHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledHeight);
+            heightLeft -= pageHeight;
+        }
+
+        pdf.save(`Market-Intelligence-Report-${primaryCity.replace(/\s+/g, '-')}.pdf`);
+        setShowPrintable(false);
+        setIsGeneratingPdf(false);
+      }).catch(err => {
+        setError("Failed to generate PDF. The logo image might be blocked by CORS.");
+        console.error("PDF Generation Error:", err);
+        setShowPrintable(false);
+        setIsGeneratingPdf(false);
+      });
+    }
+  }, [showPrintable, primaryCity, result]);
+
+
   return (
-    <div className="h-full flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <ChartBarIcon className="w-8 h-8 text-brand-gold" />
-        <h2 className="text-2xl font-bold text-brand-text">Market Intelligence Engine</h2>
-      </div>
+    <>
+      <div className="h-full flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <ChartBarIcon className="w-8 h-8 text-brand-gold" />
+          <h2 className="text-2xl font-bold text-brand-text">Market Intelligence Engine</h2>
+        </div>
 
-      {error && <div className="bg-red-500/20 text-red-300 p-3 rounded-md">{error}</div>}
+        {error && <div className="bg-red-500/20 text-red-300 p-3 rounded-md">{error}</div>}
 
-      <div className="bg-brand-secondary p-6 rounded-xl shadow-lg flex flex-col gap-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="primary-city" className="block font-medium text-brand-light mb-2">
-              1. Select Primary City
-            </label>
-            <select
-              id="primary-city"
-              value={primaryCity}
-              onChange={(e) => setPrimaryCity(e.target.value)}
-              className="w-full bg-brand-primary border border-brand-accent rounded-md p-3 focus:ring-2 focus:ring-brand-gold focus:border-brand-gold transition text-brand-text"
-            >
-              {CITIES.map(city => <option key={city} value={city}>{city}</option>)}
-            </select>
+        <div className="bg-brand-secondary p-6 rounded-xl shadow-lg flex flex-col gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="primary-city" className="block font-medium text-brand-light mb-2">
+                1. Select Primary City
+              </label>
+              <select
+                id="primary-city"
+                value={primaryCity}
+                onChange={(e) => setPrimaryCity(e.target.value)}
+                className="w-full bg-brand-primary border border-brand-accent rounded-md p-3 focus:ring-2 focus:ring-brand-gold focus:border-brand-gold transition text-brand-text"
+              >
+                {CITIES.map(city => <option key={city} value={city}>{city}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block font-medium text-brand-light mb-2">
+                2. Select Comparison Cities
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-brand-primary rounded-md border border-brand-accent max-h-32 overflow-y-auto">
+                {CITIES.filter(c => c !== primaryCity).map(city => (
+                  <label key={city} className="flex items-center gap-2 text-sm text-brand-text cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={comparisonCities.includes(city)}
+                      onChange={() => handleComparisonCityChange(city)}
+                      className="form-checkbox bg-brand-primary border-brand-accent text-brand-gold focus:ring-brand-gold"
+                    />
+                    {city}
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
           <div>
             <label className="block font-medium text-brand-light mb-2">
-              2. Select Comparison Cities
+              3. Choose Metrics for Report
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-brand-primary rounded-md border border-brand-accent max-h-32 overflow-y-auto">
-              {CITIES.filter(c => c !== primaryCity).map(city => (
-                <label key={city} className="flex items-center gap-2 text-sm text-brand-text cursor-pointer">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {METRIC_CATEGORIES.map(metric => (
+                <label key={metric.id} className="flex items-center gap-2 p-2 rounded-md bg-brand-primary border border-brand-accent cursor-pointer hover:border-brand-light transition">
                   <input
                     type="checkbox"
-                    checked={comparisonCities.includes(city)}
-                    onChange={() => handleComparisonCityChange(city)}
-                    className="form-checkbox bg-brand-primary border-brand-accent text-brand-gold focus:ring-brand-gold"
+                    checked={selectedMetrics.includes(metric.id)}
+                    onChange={() => handleMetricChange(metric.id)}
+                    className="form-checkbox bg-brand-accent border-brand-light text-brand-gold focus:ring-brand-gold"
                   />
-                  {city}
+                  <span className="text-sm text-brand-text">{metric.name}</span>
                 </label>
               ))}
             </div>
           </div>
+          <button
+            onClick={handleGenerate}
+            disabled={isLoading}
+            className="w-full sm:w-auto self-start bg-brand-gold text-brand-primary font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 hover:bg-yellow-400 transition-colors disabled:bg-brand-accent disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-t-transparent border-brand-primary rounded-full animate-spin"></div>
+                Generating Report...
+              </>
+            ) : (
+              <>
+                <SparklesIcon className="w-5 h-5" />
+                Generate Report
+              </>
+            )}
+          </button>
         </div>
-        <div>
-          <label className="block font-medium text-brand-light mb-2">
-            3. Choose Metrics for Report
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {METRIC_CATEGORIES.map(metric => (
-              <label key={metric.id} className="flex items-center gap-2 p-2 rounded-md bg-brand-primary border border-brand-accent cursor-pointer hover:border-brand-light transition">
-                <input
-                  type="checkbox"
-                  checked={selectedMetrics.includes(metric.id)}
-                  onChange={() => handleMetricChange(metric.id)}
-                  className="form-checkbox bg-brand-accent border-brand-light text-brand-gold focus:ring-brand-gold"
-                />
-                <span className="text-sm text-brand-text">{metric.name}</span>
-              </label>
-            ))}
+
+        {isLoading && (
+          <div className="flex-1 bg-brand-secondary p-6 rounded-xl shadow-lg flex flex-col items-center justify-center text-brand-light">
+              <div className="w-12 h-12 border-4 border-t-transparent border-brand-gold rounded-full animate-spin"></div>
+              <p className="mt-4 text-lg">Analyzing global market data...</p>
+              <p className="text-sm">This may take a moment.</p>
+          </div>
+        )}
+
+        {result && (
+          <div className="flex-1 bg-brand-secondary p-6 rounded-xl shadow-lg overflow-y-auto">
+              <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                      <InfographicReport content={result.report} />
+                  </div>
+                  <button
+                      onClick={handleGeneratePdf}
+                      disabled={isGeneratingPdf}
+                      className="ml-6 bg-brand-primary text-brand-light font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 border border-brand-accent hover:bg-brand-accent hover:text-brand-text transition-colors disabled:opacity-50 flex-shrink-0"
+                  >
+                      {isGeneratingPdf ? (
+                          <div className="w-5 h-5 border-2 border-t-transparent border-current rounded-full animate-spin"></div>
+                      ) : (
+                          <DownloadIcon className="w-5 h-5" />
+                      )}
+                      <span>{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
+                  </button>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-brand-accent/50">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      {result.sources && result.sources.length > 0 && (
+                          <div>
+                              <h3 className="text-lg font-bold text-brand-text mb-2">
+                                  Data Sources
+                              </h3>
+                              <ul className="list-disc list-inside space-y-1 text-sm">
+                                  {result.sources.map((source, index) => (
+                                  source.web && (
+                                      <li key={index}>
+                                          <a 
+                                              href={source.web.uri} 
+                                              target="_blank" 
+                                              rel="noopener noreferrer"
+                                              className="text-brand-gold/80 hover:text-brand-gold underline transition break-all"
+                                          >
+                                              {source.web.title || source.web.uri}
+                                          </a>
+                                      </li>
+                                  )
+                                  ))}
+                              </ul>
+                          </div>
+                      )}
+                      <div className="flex flex-col gap-2 self-start sm:self-center">
+                          {result.tokenCount && (
+                              <div className="bg-brand-primary/50 text-brand-light text-sm p-3 rounded-lg flex items-center gap-3">
+                                  <TokenIcon className="w-5 h-5 text-brand-gold" />
+                                  <span>Report generated using <strong>{result.tokenCount.toFixed(0)}</strong> tokens.</span>
+                              </div>
+                          )}
+                          {result.cost !== undefined && (
+                              <div className="bg-brand-primary/50 text-brand-light text-sm p-3 rounded-lg flex items-center gap-3">
+                                  <CashIcon className="w-5 h-5 text-brand-gold" />
+                                  <span>Estimated Cost: <strong>${result.cost.toFixed(6)}</strong> USD</span>
+                              </div>
+                          )}
+                      </div>
+                  </div>
+              </div>
+          </div>
+        )}
+      </div>
+      {showPrintable && result && (
+        <div style={{ position: 'absolute', left: '-9999px', top: 0, zIndex: -10 }}>
+          <div ref={printRef}>
+            <PrintableReport report={result} primaryCity={primaryCity} />
           </div>
         </div>
-        <button
-          onClick={handleGenerate}
-          disabled={isLoading}
-          className="w-full sm:w-auto self-start bg-brand-gold text-brand-primary font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 hover:bg-yellow-400 transition-colors disabled:bg-brand-accent disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-t-transparent border-brand-primary rounded-full animate-spin"></div>
-              Generating Report...
-            </>
-          ) : (
-            <>
-              <SparklesIcon className="w-5 h-5" />
-              Generate Report
-            </>
-          )}
-        </button>
-      </div>
-
-      {isLoading && (
-         <div className="flex-1 bg-brand-secondary p-6 rounded-xl shadow-lg flex flex-col items-center justify-center text-brand-light">
-            <div className="w-12 h-12 border-4 border-t-transparent border-brand-gold rounded-full animate-spin"></div>
-            <p className="mt-4 text-lg">Analyzing global market data...</p>
-            <p className="text-sm">This may take a moment.</p>
-         </div>
       )}
-
-      {result && (
-        <div className="flex-1 bg-brand-secondary p-6 rounded-xl shadow-lg overflow-y-auto">
-            <InfographicReport content={result.report} />
-
-            <div className="mt-8 pt-4 border-t border-brand-accent/50">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    {result.sources && result.sources.length > 0 && (
-                        <div>
-                            <h3 className="text-lg font-bold text-brand-text mb-2">
-                                Data Sources
-                            </h3>
-                            <ul className="list-disc list-inside space-y-1 text-sm">
-                                {result.sources.map((source, index) => (
-                                source.web && (
-                                    <li key={index}>
-                                        <a 
-                                            href={source.web.uri} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="text-brand-gold/80 hover:text-brand-gold underline transition break-all"
-                                        >
-                                            {source.web.title || source.web.uri}
-                                        </a>
-                                    </li>
-                                )
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                    <div className="flex flex-col gap-2 self-start sm:self-center">
-                        {result.tokenCount && (
-                            <div className="bg-brand-primary/50 text-brand-light text-sm p-3 rounded-lg flex items-center gap-3">
-                                <TokenIcon className="w-5 h-5 text-brand-gold" />
-                                <span>Report generated using <strong>{result.tokenCount.toFixed(0)}</strong> tokens.</span>
-                            </div>
-                        )}
-                        {result.cost !== undefined && (
-                            <div className="bg-brand-primary/50 text-brand-light text-sm p-3 rounded-lg flex items-center gap-3">
-                                <CashIcon className="w-5 h-5 text-brand-gold" />
-                                <span>Estimated Cost: <strong>${result.cost.toFixed(6)}</strong> USD</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 

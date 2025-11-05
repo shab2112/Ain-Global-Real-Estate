@@ -83,7 +83,7 @@ const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
       if (!inTable) { // This is the header row
         inTable = true;
         tableHeaders = cells;
-      } else if (cells.every(cell => /^-+$/.test(cell.replace(/ /g, '')))) { // This is the separator line, ignore it
+      } else if (cells.every(cell => /^:?-{2,}:?$/.test(cell))) { // This is the separator line (e.g., |---| or |:---|), ignore it
         return;
       } else { // This is a data row
         tableRows.push(cells);

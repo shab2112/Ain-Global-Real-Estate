@@ -13,21 +13,18 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
-import React, {StrictMode} from 'react';
-import ReactDOM from 'react-dom/client';
+import { createClient } from '@supabase/supabase-js';
 
-import App from './App';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-root.render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-)
+if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase URL and anonymous key are required and must be provided as environment variables.');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
